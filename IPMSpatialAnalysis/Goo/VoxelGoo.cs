@@ -24,7 +24,15 @@ namespace IPMSpatialAnalysis.Goo
         /// <summary>
         /// Geometric bounding box.
         /// </summary>
-        public override BoundingBox Boundingbox => throw new NotImplementedException();
+        public override BoundingBox Boundingbox
+        {
+            get
+            {
+                ((double minx, double miny, double minz), (double maxx, double maxy, double maxz)) = Value.BoundingBox;
+                _boundingBox = new BoundingBox(new Point3d(minx, miny, minz), new Point3d(maxx, maxy, maxz));
+                return _boundingBox;
+            }
+        }
 
         public override string TypeName => "VoxelStructure";
 
@@ -67,36 +75,40 @@ namespace IPMSpatialAnalysis.Goo
         #endregion
         #region Constructors
 
+        /// <summary>
+        /// Base constructor.
+        /// </summary>
         public VoxelGoo()
         {
             this.Value = new VoxelStructure();
         }
+
+        /// <summary>
+        /// Copy constructor.
+        /// </summary>
+        /// <param name="voxelGoo"></param>
         public VoxelGoo(VoxelGoo voxelGoo)
         {
             this.Value = new VoxelStructure(voxelGoo.Value);
 
             _aggregationMethod = voxelGoo._aggregationMethod;
             _previewCloud = new PointCloud(voxelGoo.PreviewCloud);
-
-            //UpdatePointCloud();
         }
 
-        public VoxelGoo(VoxelStructure voxelData, Utilities.AggregationMethod aggregation, int aggregationRadius)
+        /// <summary>
+        /// Constructor that wraps an existing VoxelStructure and calculates the voxel values. 
+        /// </summary>
+        /// <param name="voxelStructure"></param>
+        /// <param name="aggregation"></param>
+        /// <param name="aggregationRadius"></param>
+        public VoxelGoo(VoxelStructure voxelStructure, Utilities.AggregationMethod aggregation, int aggregationRadius)
         {
-            this.Value = voxelData;
+            this.Value = voxelStructure;
             _previewCloud = new PointCloud();
             _aggregationMethod = aggregation;
 
             // This is expensive since the whole voxel structure is traversed.
             Value.CalculateVoxelData(_aggregationMethod, aggregationRadius);
-
-            UpdatePointCloud();
-        }
-
-        public VoxelGoo(VoxelStructure voxelData)
-        {
-            this.Value = voxelData;
-            _previewCloud = new PointCloud();
 
             UpdatePointCloud();
         }
@@ -161,7 +173,7 @@ namespace IPMSpatialAnalysis.Goo
 
         public override string ToString()
         {
-            throw new NotImplementedException();
+            return $"{TypeName} with {Count} voxels";
         }
 
         public override IGH_GeometricGoo Transform(Transform xform)
@@ -171,6 +183,10 @@ namespace IPMSpatialAnalysis.Goo
         #endregion
         #region Other Methods
 
+        /// <summary>
+        /// Updates the point cloud preview. 
+        /// Call this any time the underlying voxel structure changes in some way.
+        /// </summary>
         public void UpdatePointCloud()
         {
             _previewCloud = new PointCloud();
@@ -192,6 +208,26 @@ namespace IPMSpatialAnalysis.Goo
                 Enumerable.Repeat(new Vector3d(), points.Count),
                 Enumerable.Repeat(Color.Black, points.Count),
                 values);
+        }
+
+        /// <summary>
+        /// Calls the normalisation of the underlying voxel structure.
+        /// </summary>
+        public void Normalise()
+        {
+            _previewCloud = new PointCloud();
+
+            Value.NormaliseData();
+        }
+
+        /// <summary>
+        /// Calls the underlying voxel structure method to calculate the Getis-Ord spatial correlation.
+        /// </summary>
+        /// <param name="radius">Voxel radius for calculation.</param>
+        public void CalculateGetisOrd(int radius)
+        {
+            Value.CalculateSpatialCorrelation(radius);
+            UpdatePointCloud();
         }
 
         #endregion

@@ -1,7 +1,9 @@
 ﻿using MathNet.Numerics.Statistics;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace IPMSpatialAnalysis.Classes
 {
@@ -250,6 +252,71 @@ namespace IPMSpatialAnalysis.Classes
             _mean = _sum / _nonNullCount;
         }
 
+        /// <summary>
+        /// Normalises the data using it's mean and standard deviation.
+        /// </summary>
+        public void NormaliseData()
+        {
+            if (VoxelScalars.Count < 1) return;
+            var nonNANs = VoxelScalars.Values.Where(x => !double.IsNaN(x));
+            double mean = nonNANs.Mean();
+            double standardDeviation = nonNANs.PopulationStandardDeviation();
+
+            var voxelKeys = _voxelStructure.Keys.ToList();
+
+            // Update the values in the dictionary
+            Parallel.ForEach(voxelKeys, voxelKey =>
+            {
+                var value = _voxelStructure[voxelKey].Value.Value;
+                _voxelStructure[voxelKey].Value = (value - mean) / standardDeviation;
+            });
+
+            UpdateStatistics();
+        }
+
+        /// <summary>
+        /// Removes voxels from the structure that contain fewer than minDataCount items. 
+        /// </summary>
+        /// <param name="minDataCount"></param>
+        public void PruneVoxels(int minDataCount)
+        {
+            var keys = _voxelStructure.Keys.ToList();
+
+            foreach (var key in keys)
+            {
+                if (_voxelStructure[key].Count < minDataCount)
+                {
+                    _voxelStructure.Remove(key);
+                }
+            }
+        }
+        /// <summary>
+        /// Calculates the spatial correlation for the entire voxel structure. 
+        /// The getisRadius determines the number of voxel layers in the neighbourhood.
+        /// </summary>
+        /// <param name="getisRadius"></param>
+        public void CalculateSpatialCorrelation(int getisRadius)
+        {
+            var voxelKeys = _voxelStructure.Keys.ToList();
+            ConcurrentDictionary<(int, int, int), VoxelData> newVoxelData = new ConcurrentDictionary<(int, int, int), VoxelData>();
+
+            // Make sure we have up to date statistics.
+            UpdateStatistics();
+
+            Parallel.ForEach(voxelKeys, voxel =>
+            {
+                double go = CalculateGetisOrd(voxel.Item1, voxel.Item2, voxel.Item3, getisRadius);
+                VoxelData newData = new VoxelData(go);
+
+                newVoxelData.TryAdd(voxel, newData);
+            });
+
+            _voxelStructure = new Dictionary<(int, int, int), VoxelData>(newVoxelData);
+
+            // Then update this again with the new data.
+            UpdateStatistics();
+        }
+
         #endregion
         #region Private Methods
 
@@ -370,13 +437,7 @@ namespace IPMSpatialAnalysis.Classes
                             {
                                 foreach (var value in subvoxel.ScalarData)
                                 {
-                                    sum += value;
-                                    sumOfSquares += value * value;
-                                    count++;
-                                    if (aggregationMethod == Utilities.AggregationMethod.Skewness)
-                                    {
-                                        aggregatedData.Add(value);
-                                    }
+                                    aggregatedData.Add(value);
                                 }
                             }
                         }
@@ -424,6 +485,62 @@ namespace IPMSpatialAnalysis.Classes
 
             return outValue;
         }
+
+        /// <summary>
+        /// Calculates the Getis-ord Gi spatial correlation for the specified voxel. 
+        /// </summary>
+        /// <param name="x">Voxel space x coordinate.</param>
+        /// <param name="y">Voxel space y coordinate.</param>
+        /// <param name="z">Voxel space z coordinate.</param>
+        /// <param name="getisRadius">Voxel radius for calculation.</param>
+        /// <returns></returns>
+        private double CalculateGetisOrd(int x, int y, int z, int getisRadius)
+        {
+            double sumWeights = 0;
+
+            List<double> values = new List<double>();
+            List<double> weights = new List<double>();
+
+            for (int ix = x - getisRadius; ix <= x + getisRadius; ix++)
+            {
+                for (int iy = y - getisRadius; iy <= y + getisRadius; iy++)
+                {
+                    for (int iz = z - getisRadius; iz <= z + getisRadius; iz++)
+                    {
+                        // Ignore central value
+                        if (ix == x && iy == y && iz == z) continue;
+                        if (_voxelStructure.TryGetValue((ix, iy, iz), out var voxelValue) && voxelValue.HasValue)
+                        {
+                            double weight = 1;
+                            weights.Add(weight);
+                            values.Add(voxelValue.Value.Value);
+                        }
+                    }
+                }
+            }
+
+            if (weights.Count < 2 || StandardDeviation == 0) return 0;
+
+            sumWeights = weights.Sum();
+
+            double weightedSum = 0;
+            double sumWeights2 = 0;
+
+            for (int i = 0; i < values.Count; i++)
+            {
+                weightedSum += values[i] * weights[i];
+                sumWeights2 += weights[i] * weights[i];
+            }
+
+            var numerator = weightedSum - (Mean * sumWeights);
+            var denominator = StandardDeviation *
+                Math.Sqrt((Count * sumWeights2 - (sumWeights * sumWeights)) / (Count - 1));
+
+            double go = numerator / denominator;
+
+            return go;
+        }
+
         #endregion
 
         #region Fields
