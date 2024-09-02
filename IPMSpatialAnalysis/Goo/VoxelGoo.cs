@@ -221,6 +221,21 @@ namespace IPMSpatialAnalysis.Goo
         }
 
         /// <summary>
+        /// Filters the voxel field to remove voxels that are outside of the specified range.
+        /// </summary>
+        /// <param name="minFilterValue">Lower bound</param>
+        /// <param name="maxFilterValue">Upper bound</param>
+        /// <param name="filterZeros">Whether to remove voxels equal to 0</param>
+        public void Filter(double minFilterValue, double maxFilterValue, bool filterZeros)
+        {
+            _previewCloud = new PointCloud();
+
+            Value.FilterByScalarValues(minFilterValue, maxFilterValue, filterZeros);
+
+            UpdatePointCloud();
+        }
+
+        /// <summary>
         /// Calls the underlying voxel structure method to calculate the Getis-Ord spatial correlation.
         /// </summary>
         /// <param name="radius">Voxel radius for calculation.</param>
@@ -228,6 +243,24 @@ namespace IPMSpatialAnalysis.Goo
         {
             Value.CalculateSpatialCorrelation(radius);
             UpdatePointCloud();
+        }
+
+        /// <summary>
+        /// Updates the colours of the stored point cloud points for previewing using a
+        /// provided scalar range.
+        /// </summary>
+        /// <param name="min">Lower scalar bound</param>
+        /// <param name="max">Upper scalar bound</param>
+        public void UpdatePointCloudColours(double min, double max)
+        {
+            if (_previewCloud == null) UpdatePointCloud();
+
+            foreach (var pointCloudItem in _previewCloud)
+            {
+                double colourFactor = (pointCloudItem.PointValue - min) / (max - min);
+                Color colour = Utilities.Lerp3(Color.Green, Color.Yellow, Color.Red, colourFactor);
+                pointCloudItem.Color = colour;
+            }
         }
 
         #endregion
