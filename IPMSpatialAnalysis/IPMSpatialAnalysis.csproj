@@ -4,17 +4,14 @@
     <TargetFrameworks>net48</TargetFrameworks>
     <Version>1.0</Version>
     <Title>IPMSpatialAnalysis</Title>
-    <Description>Description of IPMSpatialAnalysis</Description>
+    <Description>A set of tools for spatial statistical analysis of dense point cloud data. This code was first made for use with data from in-process monitoring sensors in LPBF machines.</Description>
     <TargetExt>.gha</TargetExt>
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="Grasshopper" Version="8.10.24226.13001" IncludeAssets="compile;build" />
+    <PackageReference Include="CsvHelper" Version="33.0.1" />
+    <PackageReference Include="Grasshopper" Version="8.9.24194.18121" IncludeAssets="compile;build" />
     <PackageReference Include="MathNet.Numerics" Version="5.0.0" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Folder Include="Components\" />
   </ItemGroup>
 
 </Project>
