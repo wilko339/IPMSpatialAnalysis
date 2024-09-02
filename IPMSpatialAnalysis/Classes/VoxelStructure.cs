@@ -290,6 +290,31 @@ namespace IPMSpatialAnalysis.Classes
                 }
             }
         }
+
+        /// <summary>
+        /// Removes voxels outside of the provided range, with an optional flag to also remove 
+        /// zero value voxels.
+        /// </summary>
+        /// <param name="min">Lower bound</param>
+        /// <param name="max">Upper bound</param>
+        /// <param name="removeZeros">Whether to remove zero value voxels</param>
+        public void FilterByScalarValues(double min, double max, bool removeZeros)
+        {
+            // Create a list of keys to remove
+            var keysToRemove = _voxelStructure
+                .Where(item => item.Value.Value < min || item.Value.Value > max)
+                .Select(item => item.Key)
+                .ToList();
+
+            // Remove the keys from the dictionaries
+            foreach (var key in keysToRemove)
+            {
+                _voxelStructure.Remove(key);
+            }
+
+            UpdateStatistics();
+        }
+
         /// <summary>
         /// Calculates the spatial correlation for the entire voxel structure. 
         /// The getisRadius determines the number of voxel layers in the neighbourhood.
@@ -335,7 +360,7 @@ namespace IPMSpatialAnalysis.Classes
         }
 
         /// <summary>
-        /// Traverse the voxels to get the minimum and maximun indices 
+        /// Traverse the voxels to get the minimum and maximum indices 
         /// before converting those to world space. 
         /// </summary>
         /// <returns>A tuple of tuples representing the min and max 
@@ -393,7 +418,7 @@ namespace IPMSpatialAnalysis.Classes
         }
 
         /// <summary>
-        /// Calculates the scalar value for the specified voxel using the aggrgationMethod and aggregationRadius given.
+        /// Calculates the scalar value for the specified voxel using the aggregationMethod and aggregationRadius given.
         /// </summary>
         /// <param name="voxelKey">The voxel to calculate.</param>
         /// <param name="aggregationMethod">The method to combine sample data.</param>
