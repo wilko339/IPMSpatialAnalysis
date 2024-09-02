@@ -5,6 +5,7 @@ using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using IPMSpatialAnalysis.Classes;
 using IPMSpatialAnalysis.Goo;
+using IPMSpatialAnalysis.Properties;
 using Rhino.DocObjects;
 using Rhino.Geometry;
 using System;
@@ -15,7 +16,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace IPMSpatialAnalysis.Components
+namespace IPMSpatialAnalysis.Components.Read
 {
     public class VoxeliseData : GH_Component
     {
@@ -32,7 +33,7 @@ namespace IPMSpatialAnalysis.Components
         /// <summary>
         /// Registers all the input parameters for this component.
         /// </summary>
-        protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
+        protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("Input", "IN", "File paths to read.", GH_ParamAccess.tree);
             pManager.AddNumberParameter("Layer Height", "LH", "Layer Height", GH_ParamAccess.item, 0.05);
@@ -55,7 +56,7 @@ namespace IPMSpatialAnalysis.Components
         /// <summary>
         /// Registers all the output parameters for this component.
         /// </summary>
-        protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
+        protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
             pManager.AddGenericParameter("Voxels", "V", "Output voxel structure.", GH_ParamAccess.item);
         }
@@ -258,9 +259,7 @@ namespace IPMSpatialAnalysis.Components
         {
             get
             {
-                //You can add image files to your project resources and access them like this:
-                // return Resources.IconForThisComponent;
-                return null;
+                return Resources.voxelise;
             }
         }
 
@@ -282,7 +281,7 @@ namespace IPMSpatialAnalysis.Components
         private const double _samplingRate = 100000;
 
         private double _voxelSize = 1;
-        private int _pointReadInterval = 10; 
+        private int _pointReadInterval = 10;
 
         #endregion
     }
