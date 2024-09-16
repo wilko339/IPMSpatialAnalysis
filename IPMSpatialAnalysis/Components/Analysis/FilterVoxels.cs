@@ -1,5 +1,7 @@
 ﻿using Grasshopper.Kernel;
 using IPMSpatialAnalysis.Goo;
+using IPMSpatialAnalysis.Properties;
+using Rhino.Geometry;
 using System;
 
 namespace IPMSpatialAnalysis.Components.Analysis
@@ -22,8 +24,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddGenericParameter("Voxel Data", "V", "Input voxel data to filter.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Min Value", "Min", "Minimum scalar bound.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("Max Value", "Max", "Maximum scalar bound.", GH_ParamAccess.item);
+            pManager.AddIntervalParameter("Scalar Range", "R", "Colour map range.", GH_ParamAccess.item);
             pManager.AddBooleanParameter("Remove Zeros", "Z", "Boolean flag to remove or keep zero voxels", GH_ParamAccess.item, false);
             pManager.AddBooleanParameter("Normalise", "N", "Whether or not to normalise the output data using z scaling before filtering.", GH_ParamAccess.item, false);
         }
@@ -43,21 +44,19 @@ namespace IPMSpatialAnalysis.Components.Analysis
         protected override void SolveInstance(IGH_DataAccess DA)
         {
             VoxelGoo voxelGoo = new VoxelGoo();
-            double minFilterValue = double.MinValue;
-            double maxFilterValue = double.MaxValue;
+            Interval scalarRange = new Interval();
             bool normalise = false;
             bool removeZeros = false;
 
             if (!DA.GetData("Voxel Data", ref voxelGoo)) return;
-            if (!DA.GetData("Min Value", ref minFilterValue)) return;
-            if (!DA.GetData("Max Value", ref maxFilterValue)) return;
+            if (!DA.GetData("Scalar Range", ref scalarRange)) return;
             if (!DA.GetData("Normalise", ref normalise)) return;
             if (!DA.GetData("Remove Zeros", ref removeZeros)) return;
 
             VoxelGoo filteredGoo = new VoxelGoo(voxelGoo);
             if (normalise) filteredGoo.Normalise();
 
-            filteredGoo.Filter(minFilterValue, maxFilterValue, removeZeros);
+            filteredGoo.Filter(scalarRange.Min, scalarRange.Max, removeZeros);
 
             DA.SetData(0, filteredGoo);
         }
@@ -70,8 +69,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
             get
             {
                 //You can add image files to your project resources and access them like this:
-                // return Resources.IconForThisComponent;
-                return null;
+                return Resources.filter;
             }
         }
 
