@@ -6,7 +6,6 @@ using Grasshopper.Kernel.Types;
 using IPMSpatialAnalysis.Classes;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
-using Rhino.DocObjects;
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
