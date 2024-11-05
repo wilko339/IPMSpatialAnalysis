@@ -63,6 +63,36 @@ namespace IPMSpatialAnalysis.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap col_norm {
+            get {
+                object obj = ResourceManager.GetObject("col_norm", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap correlation {
+            get {
+                object obj = ResourceManager.GetObject("correlation", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap explode {
+            get {
+                object obj = ResourceManager.GetObject("explode", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap filter {
             get {
                 object obj = ResourceManager.GetObject("filter", resourceCulture);
@@ -96,6 +126,16 @@ namespace IPMSpatialAnalysis.Properties {
         internal static System.Drawing.Bitmap voxelise {
             get {
                 object obj = ResourceManager.GetObject("voxelise", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap voxelisePores {
+            get {
+                object obj = ResourceManager.GetObject("voxelisePores", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }
