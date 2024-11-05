@@ -275,6 +275,76 @@ namespace IPMSpatialAnalysis.Classes
         }
 
         /// <summary>
+        /// Performs column normalisation by scaling all voxel values by the mean and 
+        /// standard deviation of all voxels in the same xy column.
+        /// If a column only contains a single value, that value is unchanged.
+        /// </summary>
+        public void ColumnNormaliseData()
+        {
+            if (_voxelStructure == null) return;
+
+            var bbox = GetVoxelBoundingBox();
+
+            int minx = bbox.Item1.minx;
+            int maxx = bbox.Item2.maxx + 1;
+
+            int miny = bbox.Item1.miny;
+            int maxy = bbox.Item2.maxy + 1;
+
+            int minz = bbox.Item1.minz;
+            int maxz = bbox.Item2.maxz + 1;
+
+            double[,] columnMeans = new double[maxx - minx, maxy - miny];
+            double[,] columnSTDs = new double[maxx - minx, maxy - miny];
+
+            // Loop over all values to calculate mean and std for each data column.
+            for (int i = minx; i < maxx; i++)
+            {
+                for (int j = miny; j < maxy; j++)
+                {
+                    List<double> columnValues = new List<double>();
+                    for (int k = minz; k < maxz; k++)
+                    {
+                        if (_voxelStructure.TryGetValue((i, j, k), out VoxelData voxelData))
+                        {
+                            if (voxelData.HasValue) columnValues.Add(voxelData.Value.Value);
+                        }
+                    }
+
+                    if (columnValues.Count > 1)
+                    {
+                        columnMeans[i - minx, j - miny] = columnValues.Mean();
+                        columnSTDs[i - minx, j - miny] = columnValues.PopulationStandardDeviation();
+                    }
+                    else
+                    {
+                        columnMeans[i - minx, j - miny] = 0;
+                        columnSTDs[i - minx, j - miny] = 1;
+                    }
+                }
+            }
+            // Second loop to normalise values
+            for (int i = minx; i < maxx; i++)
+            {
+                for (int j = miny; j < maxy; j++)
+                {
+                    for (int k = minz; k < maxz; k++)
+                    {
+                        if (_voxelStructure.TryGetValue((i, j, k), out VoxelData voxelData))
+                        {
+                            if (voxelData.HasValue)
+                            {
+                                voxelData.Value = (voxelData.Value.Value - columnMeans[i - minx, j - miny]) /
+                                    columnSTDs[i - minx, j - miny];
+                            }
+                        }
+                    }
+                }
+            }
+            UpdateStatistics();
+        }
+
+        /// <summary>
         /// Removes voxels from the structure that contain fewer than minDataCount items. 
         /// </summary>
         /// <param name="minDataCount"></param>
@@ -370,6 +440,27 @@ namespace IPMSpatialAnalysis.Classes
             (double maxx, double maxy, double maxz))
             GetWorldBoundingBox()
         {
+            var vox_bbox = GetVoxelBoundingBox();
+
+            (int x, int y, int z) minVoxel = vox_bbox.Item1;
+            (int x, int y, int z) maxVoxel = vox_bbox.Item2;
+
+            var minWorld = VoxelToWorld(minVoxel.x, minVoxel.y, minVoxel.z);
+            var maxWorld = VoxelToWorld(maxVoxel.x, maxVoxel.y, maxVoxel.z);
+
+            return (minWorld, maxWorld);
+        }
+
+        /// <summary>
+        /// Returns the min and max voxel index coordinates of the structure. 
+        /// Traverses the voxel field to do so.
+        /// </summary>
+        /// <returns></returns>
+        private (
+            (int minx, int miny, int minz),
+            (int maxx, int maxy, int maxz))
+            GetVoxelBoundingBox()
+        {
             if (_voxelStructure.Count == 0) return ((0, 0, 0), (0, 0, 0));
 
             (int x, int y, int z) minVoxel = (int.MaxValue, int.MaxValue, int.MaxValue);
@@ -389,10 +480,7 @@ namespace IPMSpatialAnalysis.Classes
                 }
             }
 
-            var minWorld = VoxelToWorld(minVoxel.x, minVoxel.y, minVoxel.z);
-            var maxWorld = VoxelToWorld(maxVoxel.x, maxVoxel.y, maxVoxel.z);
-
-            return (minWorld, maxWorld);
+            return (minVoxel, maxVoxel);
         }
 
         /// <summary>
