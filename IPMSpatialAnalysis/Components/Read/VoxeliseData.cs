@@ -34,12 +34,12 @@ namespace IPMSpatialAnalysis.Components.Read
         /// </summary>
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddTextParameter("Input", "IN", "File paths to read.", GH_ParamAccess.tree);
-            pManager.AddNumberParameter("Layer Height", "LH", "Layer Height", GH_ParamAccess.item, 0.05);
-            pManager.AddIntegerParameter("Point Read Interval", "PR", "Sets the point reading frequency. Use higher numbers for downsampling, or 1 for full sampling.", GH_ParamAccess.item, 1);
-            pManager.AddNumberParameter("Voxel Size", "VS", "The output voxel size.", GH_ParamAccess.item, 1);
+            pManager.AddTextParameter("Input", "I", "File paths to read.", GH_ParamAccess.tree);
+            pManager.AddNumberParameter("Layer Height", "L", "Layer Height", GH_ParamAccess.item, 0.05);
+            pManager.AddIntegerParameter("Point Read Interval", "P", "Sets the point reading frequency. Use higher numbers for downsampling, or 1 for full sampling.", GH_ParamAccess.item, 1);
+            pManager.AddNumberParameter("Voxel Size", "V", "The output voxel size.", GH_ParamAccess.item, 1);
 
-            var iMethod = pManager.AddIntegerParameter("Method", "ME",
+            var iMethod = pManager.AddIntegerParameter("Method", "M",
                 "Method to use for extracting the feature. 0 = Mean, 1 = Standard Dev, 2 = Skewness, 3 = Count.", GH_ParamAccess.item, 1);
             var methodParam = pManager[iMethod] as Param_Integer;
             methodParam.AddNamedValue("Mean", 0);
@@ -47,7 +47,7 @@ namespace IPMSpatialAnalysis.Components.Read
             methodParam.AddNamedValue("Skewness", 2);
             methodParam.AddNamedValue("Count", 3);
 
-            pManager.AddIntegerParameter("Extraction Radius", "ER", "Determines the number of layers of voxels used to calculate the statistics.", GH_ParamAccess.item, 1);
+            pManager.AddIntegerParameter("Extraction Radius", "E", "Determines the number of layers of voxels used to calculate the statistics.", GH_ParamAccess.item, 1);
 
             pManager.AddBooleanParameter("Reset", "R", "Reread all data.", GH_ParamAccess.item, false);
         }
@@ -178,14 +178,14 @@ namespace IPMSpatialAnalysis.Components.Read
                 _files = fileTree.Duplicate();
             }
 
-            Utilities.AggregationMethod agg;
+            Classes.Utilities.AggregationMethod agg;
             switch (method)
             {
-                case 0: agg = Utilities.AggregationMethod.Mean; break;
-                case 1: agg = Utilities.AggregationMethod.StandardDeviation; break;
-                case 2: agg = Utilities.AggregationMethod.Skewness; break;
-                case 3: agg = Utilities.AggregationMethod.Count; break;
-                default: agg = Utilities.AggregationMethod.StandardDeviation; break;
+                case 0: agg = Classes.Utilities.AggregationMethod.Mean; break;
+                case 1: agg = Classes.Utilities.AggregationMethod.StandardDeviation; break;
+                case 2: agg = Classes.Utilities.AggregationMethod.Skewness; break;
+                case 3: agg = Classes.Utilities.AggregationMethod.Count; break;
+                default: agg = Classes.Utilities.AggregationMethod.StandardDeviation; break;
             }
 
             var outTree = new GH_Structure<VoxelGoo>();
