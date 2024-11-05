@@ -64,7 +64,13 @@ namespace IPMSpatialAnalysis.Goo
         {
             get
             {
-                return Value.VoxelScalars.Values.ToList();
+                // Ensure a consistent ordering when returning the scalars.
+                return Value.VoxelScalars
+                    .OrderBy(kvp => kvp.Key.Item1)
+                    .ThenBy(kvp => kvp.Key.Item2)
+                    .ThenBy(kvp => kvp.Key.Item3)
+                    .Select(kvp => kvp.Value)
+                    .ToList();
             }
         }
         public double StandardDeviation => Value.StandardDeviation;
@@ -145,7 +151,10 @@ namespace IPMSpatialAnalysis.Goo
         /// No mesh preview!
         /// </summary>
         /// <param name="args"></param>
-        public void DrawViewportMeshes(GH_PreviewMeshArgs args) { }
+        public void DrawViewportMeshes(GH_PreviewMeshArgs args) 
+        {
+            
+        }
 
         /// <summary>
         /// Draws the point cloud preview using a small default point size.
@@ -218,6 +227,17 @@ namespace IPMSpatialAnalysis.Goo
             _previewCloud = new PointCloud();
 
             Value.NormaliseData();
+        }
+
+        /// <summary>
+        /// Calls the column normalisation method of the underlying voxel structure.
+        /// </summary>
+        public void ColumnNormalise()
+        {
+            _previewCloud = new PointCloud();
+
+            Value.ColumnNormaliseData();
+            UpdatePointCloud();
         }
 
         /// <summary>
