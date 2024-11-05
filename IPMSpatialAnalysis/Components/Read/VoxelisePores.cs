@@ -1,5 +1,6 @@
 ﻿using Grasshopper.Kernel;
 using IPMSpatialAnalysis.Goo;
+using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace IPMSpatialAnalysis.Components.Read
         {
             pManager.AddMeshParameter("PoreMeshes", "P", "List of meshes representing pores.", GH_ParamAccess.list);
             pManager.AddGenericParameter("VoxelData", "V", "Existing voxel grid to use as template.", GH_ParamAccess.item);
-            pManager.AddNumberParameter("CutoffRadius", "R", "Cutoff radius for distance calculations.", GH_ParamAccess.item, 1.0d);
+            pManager.AddIntegerParameter("KClosestPoints", "K", "Number of closest points for porosity calculation.", GH_ParamAccess.item, 10);
         }
 
         /// <summary>
@@ -45,11 +46,11 @@ namespace IPMSpatialAnalysis.Components.Read
         {
             List<Mesh> poreMeshes = new List<Mesh>();
             VoxelGoo existingVoxels = new VoxelGoo();
-            double cutoffRadius = 1;
+            int kClosestPoints = 1;
 
             if (!DA.GetDataList("PoreMeshes", poreMeshes)) return;
             if (!DA.GetData("VoxelData", ref existingVoxels)) return;
-            if (!DA.GetData("CutoffRadius", ref cutoffRadius)) return;
+            if (!DA.GetData("KClosestPoints", ref kClosestPoints)) return;
 
             if (poreMeshes.Count < 1)
             {
@@ -71,30 +72,43 @@ namespace IPMSpatialAnalysis.Components.Read
             var poreCentres = validPoreMeshes
                 .Select(pore => pore.GetBoundingBox(true).Center).ToList();
 
-            var closestPores = RTree.Point3dClosestPoints(poreCentres, voxelCentres, cutoffRadius);
+            if (poreCentres.Count < 1)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid pore meshes.");
+                return;
+            }
 
             int voxelCounter = 0;
-            foreach (var pores in closestPores)
+
+            var closestKPoints = RTree.Point3dKNeighbors(poreCentres, voxelCentres, kClosestPoints);
+
+            try
             {
-                if (pores.Length > 0)
+                foreach (var pores in closestKPoints)
                 {
-                    double inverseDistanceSum = 0;
-                    var voxelCentre = voxelCentres[voxelCounter];
-
-                    foreach (var poreIndex in pores)
+                    if (pores.Length > 0)
                     {
-                        double distance = voxelCentre.DistanceTo(poreCentres[poreIndex]);
+                        double inverseDistanceSum = 0;
+                        var voxelCentre = voxelCentres[voxelCounter];
 
-                        if (distance < cutoffRadius)
+                        foreach (var poreIndex in pores)
                         {
-                            inverseDistanceSum += Math.Exp(-distance / cutoffRadius);
+                            double distance = voxelCentre.DistanceTo(poreCentres[poreIndex]);
+
+                            inverseDistanceSum += Math.Exp(-distance);
                         }
+                        var voxelKey = newGoo.Value.WorldToVoxel(voxelCentre.X, voxelCentre.Y, voxelCentre.Z);
+                        newGoo.Value.SetVoxelDataValue(voxelKey, inverseDistanceSum);
                     }
-                    var voxelKey = newGoo.Value.WorldToVoxel(voxelCentre.X, voxelCentre.Y, voxelCentre.Z);
-                    newGoo.Value.SetVoxelDataValue(voxelKey, inverseDistanceSum);
+                    voxelCounter++;
                 }
-                voxelCounter++;
             }
+            catch (Exception e)
+            {
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Error, e.Message);
+                return;
+            }
+            
             newGoo.Value.UpdateStatistics();
             newGoo.UpdatePointCloud();
             DA.SetData(0, newGoo);
@@ -143,8 +157,7 @@ namespace IPMSpatialAnalysis.Components.Read
             get
             {
                 //You can add image files to your project resources and access them like this:
-                // return Resources.IconForThisComponent;
-                return null;
+                return Resources.voxelisePores;
             }
         }
 
