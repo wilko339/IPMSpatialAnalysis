@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-
-using Grasshopper.Kernel;
+﻿using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 
 namespace IPMSpatialAnalysis.Components.Preview
 {
@@ -98,6 +98,38 @@ namespace IPMSpatialAnalysis.Components.Preview
                         args.Display.DrawPointCloud(goo.PreviewCloud, _weight);
                     }
                 }
+            }
+
+            int lineWeight = 2;
+
+            int colourDivisions = 10;
+
+            int recHeight = 200;
+            int recWidth = 100;
+
+            var interval = recHeight / colourDivisions;
+
+            var rec = new Rectangle(10, 30, recWidth, recHeight);
+            args.Display.Draw2dRectangle(rec, Color.Black, lineWeight, Color.White);
+
+            for (int i = 0; i < colourDivisions; i++)
+            {
+                Rectangle section = new Rectangle(rec.X, rec.Y + i * interval, recWidth / 3, interval);
+
+                double factor = (double)i / (double)(colourDivisions - 1);
+
+                Color sectionColour = Classes.Utilities.Lerp3(Color.Green, Color.Yellow, Color.Red, factor);
+
+                args.Display.Draw2dRectangle(section, Color.Black, lineWeight, sectionColour);
+
+                PointF start = new PointF(rec.X, rec.Y + (i + 1) * interval);
+                PointF end = new PointF(rec.X + recWidth, rec.Y + (i + 1) * interval);
+
+                args.Display.Draw2dLine(start, end, Color.Black, 1);
+                args.Display.Draw2dText(_interval.ParameterAt(factor).ToString("F4"),
+                    Color.Black,
+                    new Point2d(start.X + recWidth / 3 + 3, rec.Y + i * interval + 3),
+                    false, interval - 6);
             }
         }
 
