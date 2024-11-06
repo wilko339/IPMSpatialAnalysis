@@ -70,6 +70,7 @@ namespace IPMSpatialAnalysis.Components.Preview
 
                         // This needs to change so that the point cloud stores the values,
                         // and then the display function takes care of the colour.
+                        display.UpdatePointCloud();
                         display.UpdatePointCloudColours(displayRange.T0, displayRange.T1);
 
                         _displayGoos.Add(display);
