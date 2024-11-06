@@ -185,6 +185,7 @@ namespace IPMSpatialAnalysis.Classes
             }
         }
 
+
         /// <summary>
         /// Sets all voxel data scalars to the given value.
         /// </summary>
@@ -232,7 +233,7 @@ namespace IPMSpatialAnalysis.Classes
         }
 
         /// <summary>
-        /// Recalculates the statistics of the overall voxel structure.
+        /// Recalculates the statistics of the voxel structure.
         /// </summary>
         public void UpdateStatistics()
         {
@@ -272,6 +273,9 @@ namespace IPMSpatialAnalysis.Classes
             });
 
             UpdateStatistics();
+            // The stored raw data doesn't really relate to the scalar value
+            // so we may as well free up memory.
+            SetNullStoredRawData();
         }
 
         /// <summary>
@@ -342,6 +346,10 @@ namespace IPMSpatialAnalysis.Classes
                 }
             }
             UpdateStatistics();
+
+            // The stored raw data doesn't really relate to the scalar value
+            // so we may as well free up memory.
+            SetNullStoredRawData();
         }
 
         /// <summary>
@@ -410,10 +418,66 @@ namespace IPMSpatialAnalysis.Classes
 
             // Then update this again with the new data.
             UpdateStatistics();
+
+            // The stored raw data doesn't really relate to the scalar value
+            // so we may as well free up memory.
+            SetNullStoredRawData();
+        }
+
+        /// <summary>
+        /// Executes a custom delegate function for each voxel value in the structure.
+        /// </summary>
+        /// <param name="func">The function to execute, taking the voxel value as the only argument, returning a double value.</param>
+        public void ExecuteCustomFunction(Func<double, double> func)
+        {
+            foreach (var voxel in _voxelStructure.Values)
+            {
+                if (voxel.HasValue)
+                {
+                    voxel.Value = func(voxel.Value.Value);
+                }
+            }
+            UpdateStatistics();
+        }
+
+        /// <summary>
+        /// Exectutes a custome delegate function for each corresponding voxel pair in the current structure
+        /// and another provided structure.
+        /// </summary>
+        /// <param name="function">The function to execute, taking the current voxel value and the corresponding
+        /// value in the other provided VoxelStructure.</param>
+        /// <param name="other">The other VoxelStructure to operate over.</param>
+        public void ExecuteCustomFunction(Func<double, double, double> function, VoxelStructure other)
+        {
+            var voxelKeys = _voxelStructure.Keys;
+
+            foreach (var key in voxelKeys)
+            {
+                if (_voxelStructure.TryGetValue(key, out var voxelValue1) && other._voxelStructure.TryGetValue(key, out var voxelValue2))
+                {
+                    if (voxelValue1.HasValue && voxelValue2.HasValue)
+                    {
+                        voxelValue1.Value = function(voxelValue1.Value.Value, voxelValue2.Value.Value);
+                    }
+                }
+            }
         }
 
         #endregion
         #region Private Methods
+
+        /// <summary>
+        /// Sets the raw data lists to null to free memory.
+        /// </summary>
+        private void SetNullStoredRawData()
+        {
+            var keys = _voxelStructure.Keys.ToList();
+
+            foreach (var voxel in keys)
+            {
+                _voxelStructure[voxel].ScalarData = null;
+            }
+        }
 
         /// <summary>
         /// Returns a list of all of the non-null voxel scalar values. 
