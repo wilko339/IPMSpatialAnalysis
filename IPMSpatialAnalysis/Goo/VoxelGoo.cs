@@ -30,6 +30,12 @@ namespace IPMSpatialAnalysis.Goo
             {
                 ((double minx, double miny, double minz), (double maxx, double maxy, double maxz)) = Value.BoundingBox;
                 _boundingBox = new BoundingBox(new Point3d(minx, miny, minz), new Point3d(maxx, maxy, maxz));
+
+                // Check if box is planar in any dimension and if so, inflate a little
+                if (_boundingBox.Diagonal.X == 0) _boundingBox.Inflate(0, 0, 0.001);
+                if (_boundingBox.Diagonal.Y == 0) _boundingBox.Inflate(0, 0, 0.001);
+                if (_boundingBox.Diagonal.Z == 0) _boundingBox.Inflate(0, 0, 0.001);
+
                 return _boundingBox;
             }
         }
@@ -116,7 +122,7 @@ namespace IPMSpatialAnalysis.Goo
             // This is expensive since the whole voxel structure is traversed.
             Value.CalculateVoxelData(_aggregationMethod, aggregationRadius);
 
-            UpdatePointCloud();
+            //UpdatePointCloud();
         }
 
         #endregion
@@ -162,7 +168,7 @@ namespace IPMSpatialAnalysis.Goo
         /// <param name="args"></param>
         public void DrawViewportWires(GH_PreviewWireArgs args)
         {
-            args.Pipeline.DrawPointCloud(PreviewCloud, 2);
+            args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
         }
 
         public override IGH_GeometricGoo DuplicateGeometry()
@@ -237,7 +243,7 @@ namespace IPMSpatialAnalysis.Goo
             _previewCloud = new PointCloud();
 
             Value.ColumnNormaliseData();
-            UpdatePointCloud();
+            //UpdatePointCloud();
         }
 
         /// <summary>
@@ -252,7 +258,7 @@ namespace IPMSpatialAnalysis.Goo
 
             Value.FilterByScalarValues(minFilterValue, maxFilterValue, filterZeros);
 
-            UpdatePointCloud();
+            //UpdatePointCloud();
         }
 
         /// <summary>
@@ -262,7 +268,12 @@ namespace IPMSpatialAnalysis.Goo
         public void CalculateGetisOrd(int radius)
         {
             Value.CalculateSpatialCorrelation(radius);
-            UpdatePointCloud();
+            //UpdatePointCloud();
+        }
+
+        public void RunCustomFunction(Func<double, double, double> function, VoxelGoo other)
+        {
+            Value.ExecuteCustomFunction(function, other.Value);
         }
 
         /// <summary>
