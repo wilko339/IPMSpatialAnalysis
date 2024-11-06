@@ -6,3 +6,5 @@ In-process monitoring creates huge datasets which are difficult to visualise and
 
 ## Use
 The library was built with Grasshopper in mind and the important functionality has been abstracted into a suite of components for the canvas. At each step, the voxel fields can be previewed in Rhino using a colourmap to plot the scalar values of the voxels. This integration means that any meshes or CAD files (such as the original component, or CT scans) can be overlayed directly onto the IPM data. 
+
+The class can be used without Rhino/Grasshopper if required. 
