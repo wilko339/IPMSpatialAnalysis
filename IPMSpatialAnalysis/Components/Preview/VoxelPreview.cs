@@ -56,6 +56,8 @@ namespace IPMSpatialAnalysis.Components.Preview
             if (!DA.GetData("Point Weight", ref weight)) return;
             if (!DA.GetData("Colourbar Title", ref colourBarTitle)) return;
 
+            _colourBarTitle = colourBarTitle;
+
             _weight = weight < 1 ? 1 : weight;
 
             _displayGoos = new List<VoxelGoo>();
