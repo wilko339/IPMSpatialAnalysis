@@ -92,6 +92,86 @@ namespace IPMSpatialAnalysis.Components.Preview
 
             if (!Locked)
             {
+                int lineWeight = 2;
+                int colourDivisions = 10;
+                int recHeight = 200;
+                int colourBlockWidth = 33;
+                int approxCharacterWidth = 7;
+                int textPadding = 3;
+
+                var interval = recHeight / colourDivisions;
+
+                System.Drawing.Point startPoint = new System.Drawing.Point(10, 30);
+
+                List<string> displayValues = new List<string>();
+                int longestString = 0;
+
+                // Get all numerical values to display and work out the longest.
+                for (int i = 0; i < colourDivisions; i++)
+                {
+                    double factor = (double)i / (double)(colourDivisions - 1);
+                    string displayValue = _interval.ParameterAt(factor).ToString("F4");
+
+                    if (displayValue.Length > longestString) longestString = displayValue.Length;
+                    displayValues.Add(displayValue);
+                }
+
+                // Calculate textbox width based on string length
+                int textBoxWidth = approxCharacterWidth * longestString + 2 * textPadding;
+                int extremeRightCoord = startPoint.X + textBoxWidth + colourBlockWidth + 1;
+
+                // If a title is provided, add a box to the top
+                bool title = _colourBarTitle.Length > 0;
+                System.Drawing.Point colourBarStartPoint = startPoint;
+
+                if (title)
+                {
+                    colourBarStartPoint.Y += interval;
+                    recHeight += interval;
+                }
+
+                // Draw background
+                var rec = new Rectangle(10, 30, extremeRightCoord - startPoint.X, recHeight);
+                args.Display.Draw2dRectangle(rec, Color.Black, lineWeight, Color.White);
+
+                if (title)
+                {
+                    args.Display.Draw2dText(_colourBarTitle, Color.Black,
+                        new Point2d(startPoint.X + (extremeRightCoord - startPoint.X) / 2, startPoint.Y + interval / 2), true, interval - textPadding * 2);
+                }
+
+                // Draw the rest
+                for (int i = 0; i < colourDivisions; i++)
+                {
+                    double factor = (double)i / (double)(colourDivisions - 1);
+
+                    // Colour block
+                    Rectangle colourBlock = new Rectangle(colourBarStartPoint.X, colourBarStartPoint.Y + i * interval, colourBlockWidth, interval);
+                    Color colourBlockColour = Classes.Utilities.Lerp3(Color.Green, Color.Yellow, Color.Red, factor);
+                    args.Display.Draw2dRectangle(colourBlock, Color.Black, lineWeight, colourBlockColour);
+
+                    // Separating lines
+                    if (i < colourDivisions - 1)
+                    {
+                        PointF start = new PointF(colourBarStartPoint.X, colourBarStartPoint.Y + (i + 1) * interval);
+                        PointF end = new PointF(extremeRightCoord, start.Y);
+                        args.Display.Draw2dLine(start, end, Color.Black, 1);
+                    }
+
+                    args.Display.Draw2dText(displayValues[i],
+                        Color.Black,
+                        new Point2d(
+                            colourBlockWidth + textPadding + colourBarStartPoint.X,
+                            colourBarStartPoint.Y + i * interval + textPadding + 1),
+                        false, interval - textPadding * 2);
+                }
+
+                if (title)
+                {
+                    PointF start = new PointF(colourBarStartPoint.X, colourBarStartPoint.Y);
+                    PointF end = new PointF(extremeRightCoord, start.Y);
+                    args.Display.Draw2dLine(start, end, Color.Black, 1);
+                }
                 if (_displayGoos.Count > 0)
                 {
                     foreach (var goo in _displayGoos)
@@ -99,38 +179,6 @@ namespace IPMSpatialAnalysis.Components.Preview
                         args.Display.DrawPointCloud(goo.PreviewCloud, _weight);
                     }
                 }
-            }
-
-            int lineWeight = 2;
-
-            int colourDivisions = 10;
-
-            int recHeight = 200;
-            int recWidth = 100;
-
-            var interval = recHeight / colourDivisions;
-
-            var rec = new Rectangle(10, 30, recWidth, recHeight);
-            args.Display.Draw2dRectangle(rec, Color.Black, lineWeight, Color.White);
-
-            for (int i = 0; i < colourDivisions; i++)
-            {
-                Rectangle section = new Rectangle(rec.X, rec.Y + i * interval, recWidth / 3, interval);
-
-                double factor = (double)i / (double)(colourDivisions - 1);
-
-                Color sectionColour = Classes.Utilities.Lerp3(Color.Green, Color.Yellow, Color.Red, factor);
-
-                args.Display.Draw2dRectangle(section, Color.Black, lineWeight, sectionColour);
-
-                PointF start = new PointF(rec.X, rec.Y + (i + 1) * interval);
-                PointF end = new PointF(rec.X + recWidth, rec.Y + (i + 1) * interval);
-
-                args.Display.Draw2dLine(start, end, Color.Black, 1);
-                args.Display.Draw2dText(_interval.ParameterAt(factor).ToString("F4"),
-                    Color.Black,
-                    new Point2d(start.X + recWidth / 3 + 3, rec.Y + i * interval + 3),
-                    false, interval - 6);
             }
         }
 
@@ -160,6 +208,8 @@ namespace IPMSpatialAnalysis.Components.Preview
 
         private GH_Structure<IGH_Goo> _voxelGoos = new GH_Structure<IGH_Goo>();
         private Interval _interval = new Interval();
+
+        private string _colourBarTitle = "";
 
         #endregion
     }
