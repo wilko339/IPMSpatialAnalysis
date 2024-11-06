@@ -30,6 +30,7 @@ namespace IPMSpatialAnalysis.Components.Preview
             pManager.AddGenericParameter("Voxel Data", "V", "Input voxel data to filter.", GH_ParamAccess.tree);
             pManager.AddIntervalParameter("Scalar Range", "R", "Sets a custom scalar range for colouring.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Point Weight", "W", "The weight of the display points.", GH_ParamAccess.item, 5);
+            pManager.AddTextParameter("Colourbar Title", "T", "Sets a custom title for the colourbar.", GH_ParamAccess.item, "");
         }
 
         /// <summary>
@@ -48,14 +49,14 @@ namespace IPMSpatialAnalysis.Components.Preview
             GH_Structure<IGH_Goo> voxelGoos = new GH_Structure<IGH_Goo>();
             Interval displayRange = new Interval();
             int weight = 2;
+            string colourBarTitle = "";
 
             if (!DA.GetDataTree("Voxel Data", out voxelGoos)) return;
             if (!DA.GetData("Scalar Range", ref displayRange)) return;
             if (!DA.GetData("Point Weight", ref weight)) return;
+            if (!DA.GetData("Colourbar Title", ref colourBarTitle)) return;
 
             _weight = weight < 1 ? 1 : weight;
-
-            //if (voxelGoos == _voxelGoos && displayRange == _interval) return;
 
             _displayGoos = new List<VoxelGoo>();
 
