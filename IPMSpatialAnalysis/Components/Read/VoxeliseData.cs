@@ -138,8 +138,6 @@ namespace IPMSpatialAnalysis.Components.Read
                                 csv.ReadHeader();
 
                                 int counter = 0;
-                                double travelledDistance = double.MaxValue;
-                                Point2d previousPoint = new Point2d();
 
                                 (double x, double y, double z, double scalar)[] pointsBlock = new (double x, double y, double z, double scalar)[blockSize];
                                 int blockIndex = 0;
@@ -161,7 +159,6 @@ namespace IPMSpatialAnalysis.Components.Read
                                             voxelData.AddPoints(pointsBlock);
                                             blockIndex = 0;
                                         }
-                                        previousPoint = currentPoint;
                                     }
                                     counter++;
                                 }
@@ -172,7 +169,7 @@ namespace IPMSpatialAnalysis.Components.Read
                             }
                         });
                     }
-                    voxelData.PruneVoxels(3);
+                    voxelData.PruneVoxels(5);
                     _voxelStructure.Add(path, voxelData);
                 }
                 _files = fileTree.Duplicate();
