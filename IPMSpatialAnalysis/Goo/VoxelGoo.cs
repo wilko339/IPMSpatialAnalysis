@@ -193,7 +193,20 @@ namespace IPMSpatialAnalysis.Goo
 
         public override IGH_GeometricGoo Transform(Transform xform)
         {
-            throw new NotImplementedException();
+            var transformedGoo = new VoxelGoo(this);
+
+            if (xform.IsValid)
+            {
+                Matrix4x4 transformationMatrix = new Matrix4x4(
+                    xform.M00, xform.M01, xform.M02, xform.M03,
+                    xform.M10, xform.M11, xform.M12, xform.M13,
+                    xform.M20, xform.M21, xform.M22, xform.M23,
+                    xform.M30, xform.M31, xform.M32, xform.M33);
+
+                transformedGoo.Value.SetTransformation(transformationMatrix);
+                transformedGoo.UpdatePointCloud();
+            }
+            return transformedGoo;
         }
         #endregion
         #region Other Methods
