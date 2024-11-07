@@ -8,7 +8,9 @@ using System.Threading.Tasks;
 namespace IPMSpatialAnalysis.Classes
 {
     /// <summary>
-    /// This class handles the organisation of the data in the voxel structure. 
+    /// Manages a 3D voxel structure for spatial data analysis.
+    /// Each voxel contains statistical data.
+    /// Thread-safe.
     /// </summary>
     public class VoxelStructure
     {
