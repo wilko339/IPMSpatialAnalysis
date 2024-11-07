@@ -35,7 +35,10 @@ namespace IPMSpatialAnalysis.Components.Read
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
             pManager.AddTextParameter("Input", "I", "File paths to read.", GH_ParamAccess.tree);
-            pManager.AddNumberParameter("Layer Height", "L", "Layer Height", GH_ParamAccess.item, 0.05);
+            pManager.AddTextParameter("X Column Name", "X", "Name of column containing x position data.", GH_ParamAccess.item, "GalvoXActualCartesian");
+            pManager.AddTextParameter("Y Column Name", "Y", "Name of column containing x position data.", GH_ParamAccess.item, "GalvoYActualCartesian");
+            pManager.AddTextParameter("Data Column Name", "D", "Name of column containing measurement data.", GH_ParamAccess.item, "Photodiode1Normalised");
+            pManager.AddNumberParameter("Layer Heights", "L", "The layer height corresponding to each file in the input filepaths.", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Point Read Interval", "P", "Sets the point reading frequency. Use higher numbers for downsampling, or 1 for full sampling.", GH_ParamAccess.item, 1);
             pManager.AddNumberParameter("Voxel Size", "V", "The output voxel size.", GH_ParamAccess.item, 1);
 
@@ -68,7 +71,11 @@ namespace IPMSpatialAnalysis.Components.Read
         {
             GH_Structure<GH_String> fileTree = new GH_Structure<GH_String>();
 
-            double layerHeight = double.MinValue;
+            string xColumnName = "";
+            string yColumnName = "";
+            string dataColumnName = "";
+
+            GH_Structure<GH_Number> layerHeights = new GH_Structure<GH_Number>();
             double voxelSize = double.MinValue;
 
             int pointReadInterval = 0;
@@ -79,7 +86,10 @@ namespace IPMSpatialAnalysis.Components.Read
             Interval valueRange = new Interval(0, 1);
 
             if (!DA.GetDataTree("Input", out fileTree)) return;
-            if (!DA.GetData("Layer Height", ref layerHeight)) return;
+            if (!DA.GetData(1, ref xColumnName)) return;
+            if (!DA.GetData(2, ref yColumnName)) return;
+            if (!DA.GetData(3, ref dataColumnName)) return;
+            if (!DA.GetDataTree("Layer Heights", out layerHeights)) return;
             if (!DA.GetData("Point Read Interval", ref pointReadInterval)) return;
             if (!DA.GetData("Voxel Size", ref voxelSize)) return;
             if (!DA.GetData("Method", ref method)) return;
@@ -100,15 +110,7 @@ namespace IPMSpatialAnalysis.Components.Read
             if (voxelSize != _voxelSize) reset = true;
             _voxelSize = voxelSize;
 
-            layerHeight = Math.Max(layerHeight, 0.01);
-            if (layerHeight != _layerThickness) reset = true;
-            _layerThickness = layerHeight;
-
-            string xColumnName = "x";
-            string yColumnName = "y";
-            string pdColumnName = "photodiode";
-
-            if (IsFileTreeChanged(fileTree) || reset || rereadData)
+            if (!CheckTreeEquality(fileTree, _files) || reset || rereadData)
             {
                 _voxelStructure = new Dictionary<GH_Path, VoxelStructure>();
 
@@ -116,22 +118,18 @@ namespace IPMSpatialAnalysis.Components.Read
                 {
                     VoxelStructure voxelData = new VoxelStructure(voxelSize);
 
-                    // Get the list of filepaths to read
+                    // Get the list of filepaths and corresponding layer heights to read
                     List<string> filePaths = fileTree[path].Select(x => x.Value).ToList();
+                    List<double> heights = layerHeights[path].Select(x => x.Value).ToList();
 
                     if (filePaths.Count > 0)
                     {
-                        List<(double, int)> layers = GetLayers(filePaths, _layerThickness);
-
-                        // Sort the layers by height
-                        layers.Sort((a, b) => a.Item1.CompareTo(b.Item1));
-
                         // Set the buffer size
                         int blockSize = 10000;
 
-                        Parallel.ForEach(layers, file =>
+                        Parallel.For(0, filePaths.Count ,i =>
                         {
-                            using (StreamReader reader = new StreamReader(File.OpenRead(filePaths[file.Item2])))
+                            using (StreamReader reader = new StreamReader(File.OpenRead(filePaths[i])))
                             {
                                 var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
                                 csv.Read();
@@ -146,13 +144,13 @@ namespace IPMSpatialAnalysis.Components.Read
                                 {
                                     if (counter % _pointReadInterval == 0)
                                     {
-                                        double photodiodeReading = csv.GetField<double>(pdColumnName);
+                                        double photodiodeReading = csv.GetField<double>(dataColumnName);
                                         double x = csv.GetField<double>(xColumnName);
                                         double y = csv.GetField<double>(yColumnName);
 
                                         Point2d currentPoint = new Point2d(x, y);
 
-                                        pointsBlock[blockIndex++] = (x, y, file.Item1, photodiodeReading);
+                                        pointsBlock[blockIndex++] = (x, y, heights[i], photodiodeReading);
 
                                         if (blockIndex >= blockSize)
                                         {
@@ -196,32 +194,28 @@ namespace IPMSpatialAnalysis.Components.Read
         }
 
         /// <summary>
-        /// Runs some basic checks to see if the file input has been changed. This determines whether to reread all the data
-        /// or not. If we just want to change the aggregation method for example, it is not necessary to reread everything. 
-        /// 
-        /// NOTE: This does not detect directory changes, so if the list of filenames is the same but they are in a different
-        /// directory (such as chopped up layers), this function will return false. 
+        /// Check equality between two data trees.
         /// 
         /// </summary>
-        /// <param name="fileTree"></param>
+        /// <param name="tree"></param>
         /// <returns></returns>
-        private bool IsFileTreeChanged(GH_Structure<GH_String> fileTree)
+        private bool CheckTreeEquality(GH_Structure<GH_String> tree1, GH_Structure<GH_String> tree2)
         {
-            if (_files.IsEmpty || _files == null) return true;
+            if (tree1.Branches.Count != tree2.Branches.Count) return false;
+            if (tree1.DataCount != tree2.DataCount) return false;
 
-            if (fileTree.Branches.Count != _files.Branches.Count) return true;
+            var paths1 = tree1.Paths.ToList();
+            var paths2 = tree2.Paths.ToList();
 
-            if (fileTree.DataCount != _files.DataCount) return true;
+            if (paths1.Count != paths2.Count) return false;
 
-            var oldPaths = _files.Paths.ToList();
-            var newPaths = fileTree.Paths.ToList();
-
-            for (int i = 0; i < newPaths.Count; i++)
+            for (int i = 0; i < paths1.Count; i++)
             {
-                if (!newPaths[i].Indices.SequenceEqual(oldPaths[i].Indices)) return true;
+                if (!paths1[i].Indices.SequenceEqual(paths2[i].Indices))
+                    return false;
             }
 
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -269,8 +263,9 @@ namespace IPMSpatialAnalysis.Components.Read
 
         #region Fields
 
-        private double _layerThickness = 0.05f;
+
         private GH_Structure<GH_String> _files = new GH_Structure<GH_String>();
+        private GH_Structure<GH_Number> _layerHeights = new GH_Structure<GH_Number>();
         private GH_Structure<VoxelGoo> _voxelGoo;
         private Dictionary<GH_Path, VoxelStructure> _voxelStructure;
 
