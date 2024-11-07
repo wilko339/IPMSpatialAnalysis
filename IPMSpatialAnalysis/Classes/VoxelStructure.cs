@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Threading.Tasks;
 
 namespace IPMSpatialAnalysis.Classes
@@ -170,6 +171,11 @@ namespace IPMSpatialAnalysis.Classes
             double wz = voxelKey.z * _voxelSize + _voxelSize / 2 + _offset.z;
 
             return (wx, wy, wz);
+        }
+
+        public void SetTransformation(Matrix4x4 transformationMatrix)
+        {
+            _transformationMatrix = transformationMatrix;
         }
 
         /// <summary>
@@ -738,6 +744,8 @@ namespace IPMSpatialAnalysis.Classes
         private double _max;
 
         private int _nonNullCount = -1;
+
+        private Matrix4x4 _transformationMatrix = Matrix4x4.Identity;
 
         #endregion
     }
