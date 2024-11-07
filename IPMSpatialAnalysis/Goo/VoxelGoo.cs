@@ -173,12 +173,12 @@ namespace IPMSpatialAnalysis.Goo
 
         public override IGH_GeometricGoo DuplicateGeometry()
         {
-            throw new NotImplementedException();
+            return new VoxelGoo(this);
         }
 
         public override BoundingBox GetBoundingBox(Transform xform)
         {
-            throw new NotImplementedException();
+            return Boundingbox;
         }
 
         public override IGH_GeometricGoo Morph(SpaceMorph xmorph)
