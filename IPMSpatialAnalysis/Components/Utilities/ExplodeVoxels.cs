@@ -35,6 +35,7 @@ namespace IPMSpatialAnalysis.Components.Utilities
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
             pManager.AddPointParameter("Voxel Centres", "P", "Voxel centre points.", GH_ParamAccess.list);
+            pManager.AddPointParameter("Voxel Indices", "I", "Voxel indices", GH_ParamAccess.list);
             pManager.AddNumberParameter("Voxel Values", "V", "Voxel values", GH_ParamAccess.list);
         }
 
@@ -48,13 +49,16 @@ namespace IPMSpatialAnalysis.Components.Utilities
             if (!DA.GetData("Voxel Data", ref voxelGoo)) return;
 
             List<GH_Point> outPoints = new List<GH_Point>();
+            List<GH_Point> outIndices = new List<GH_Point>();
             List<double> outValues = new List<double>();
 
             outValues = voxelGoo.VoxelScalars;
-            outPoints = voxelGoo.VoxelCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))).ToList();
+            outPoints = voxelGoo.WorldCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))).ToList();
+            outIndices = voxelGoo.VoxelCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))).ToList();
 
             DA.SetDataList(0, outPoints);
-            DA.SetDataList(1, outValues);
+            DA.SetDataList(1, outIndices);
+            DA.SetDataList(2, outValues);
         }
 
         /// <summary>
