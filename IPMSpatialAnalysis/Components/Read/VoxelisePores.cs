@@ -62,7 +62,6 @@ namespace IPMSpatialAnalysis.Components.Read
 
             List<(double, double, double, double)> poreData = new List<(double, double, double, double)>();
             newGoo.Value.SetVoxelDataValues(0);
-            newGoo.UpdatePointCloud();
 
             var voxelCentres = newGoo.VoxelCoords
                 .Select(p => new Point3d(p.x, p.y, p.z))
@@ -77,7 +76,7 @@ namespace IPMSpatialAnalysis.Components.Read
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, "No valid pore meshes.");
                 return;
             }
-
+        
             int voxelCounter = 0;
 
             var closestKPoints = RTree.Point3dKNeighbors(poreCentres, voxelCentres, kClosestPoints);
@@ -110,7 +109,6 @@ namespace IPMSpatialAnalysis.Components.Read
             }
             
             newGoo.Value.UpdateStatistics();
-            newGoo.UpdatePointCloud();
             DA.SetData(0, newGoo);
         }
 
