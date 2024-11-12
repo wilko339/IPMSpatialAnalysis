@@ -3,7 +3,6 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 using System.Threading.Tasks;
 
 namespace IPMSpatialAnalysis.Classes
@@ -83,6 +82,7 @@ namespace IPMSpatialAnalysis.Classes
         {
             _voxelSize = voxelStructure._voxelSize;
             _offset = voxelStructure._offset;
+            _transformationMatrix = voxelStructure._transformationMatrix;
 
             // Deep copy of _voxelStructure dictionary
             _voxelStructure = new Dictionary<(int, int, int), VoxelData>(voxelStructure._voxelStructure.Count);
@@ -158,7 +158,7 @@ namespace IPMSpatialAnalysis.Classes
             double wy = y * _voxelSize + _voxelSize / 2 + _offset.y;
             double wz = z * _voxelSize + _voxelSize / 2 + _offset.z;
 
-            return (wx, wy, wz);
+            return _transformationMatrix.Transform(wx, wy, wz);
         }
 
         /// <summary>
@@ -172,7 +172,7 @@ namespace IPMSpatialAnalysis.Classes
             double wy = voxelKey.y * _voxelSize + _voxelSize / 2 + _offset.y;
             double wz = voxelKey.z * _voxelSize + _voxelSize / 2 + _offset.z;
 
-            return (wx, wy, wz);
+            return _transformationMatrix.Transform(wx, wy, wz);
         }
 
         public void SetTransformation(Matrix4x4 transformationMatrix)
@@ -220,6 +220,16 @@ namespace IPMSpatialAnalysis.Classes
                 voxelData.ScalarData = new List<double>();
                 voxelData.Value = value;
             }
+        }
+
+        /// <summary>
+        /// Adds a new voxel key to the structure.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="value"></param>
+        public void AddVoxelValue((int, int, int) key, double value)
+        {
+            _voxelStructure.Add(key, new VoxelData(value));
         }
 
         /// <summary>
@@ -747,7 +757,7 @@ namespace IPMSpatialAnalysis.Classes
 
         private int _nonNullCount = -1;
 
-        private Matrix4x4 _transformationMatrix = Matrix4x4.Identity;
+        private Matrix4x4 _transformationMatrix = new Matrix4x4();
 
         #endregion
     }
