@@ -1,11 +1,10 @@
-﻿using Grasshopper.Kernel;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
 using IPMSpatialAnalysis.Classes;
 using Rhino.Geometry;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
 
 namespace IPMSpatialAnalysis.Goo
 {
@@ -45,27 +44,42 @@ namespace IPMSpatialAnalysis.Goo
         public override string TypeDescription => "Spatially organised voxel structure representing a dense scalar point cloud.";
 
         /// <summary>
-        /// The PointCloud instance used for the preview in Rhino.
-        /// </summary>
-        public PointCloud PreviewCloud
-        {
-            get
-            {
-                return _previewCloud;
-            }
-        }
-
-        /// <summary>
         /// The voxel coordinates of the underlying VoxelStructure as a list.
         /// </summary>
-        public List<(double x, double y, double z)> VoxelCoords
+        public List<(double x, double y, double z)> WorldCoords
         {
             get
             {
                 if (VoxelScalars.Count < 1) return new List<(double x, double y, double z)>();
+
+                return Value.VoxelScalars
+                    .OrderBy(kvp => kvp.Key.Item1)
+                    .ThenBy(kvp => kvp.Key.Item2)
+                    .ThenBy(kvp => kvp.Key.Item3)
+                    .Select(kvp => Value.VoxelToWorld(kvp.Key))
+                    .ToList();
+
                 return Value.VoxelScalars.Keys.Select(item => Value.VoxelToWorld(item)).ToList();
             }
         }
+
+        public List<(int x, int y, int z)> VoxelCoords
+        {
+            get
+            {
+                if (VoxelScalars.Count < 1) return new List<(int x, int y, int z)>();
+
+                return Value.VoxelScalars
+                    .OrderBy(kvp => kvp.Key.Item1)
+                    .ThenBy(kvp => kvp.Key.Item2)
+                    .ThenBy(kvp => kvp.Key.Item3)
+                    .Select(kvp => kvp.Key)
+                    .ToList();
+
+                return Value.VoxelScalars.Keys.ToList();
+            }
+        }
+
         public List<double> VoxelScalars
         {
             get
@@ -85,6 +99,7 @@ namespace IPMSpatialAnalysis.Goo
         public double Min => Value.Min;
         public double Max => Value.Max;
         #endregion
+
         #region Constructors
 
         /// <summary>
@@ -104,7 +119,6 @@ namespace IPMSpatialAnalysis.Goo
             this.Value = new VoxelStructure(voxelGoo.Value);
 
             _aggregationMethod = voxelGoo._aggregationMethod;
-            _previewCloud = new PointCloud(voxelGoo.PreviewCloud);
         }
 
         /// <summary>
@@ -116,13 +130,17 @@ namespace IPMSpatialAnalysis.Goo
         public VoxelGoo(VoxelStructure voxelStructure, Utilities.AggregationMethod aggregation, int aggregationRadius)
         {
             this.Value = voxelStructure;
-            _previewCloud = new PointCloud();
             _aggregationMethod = aggregation;
 
             // This is expensive since the whole voxel structure is traversed.
             Value.CalculateVoxelData(_aggregationMethod, aggregationRadius);
 
             //UpdatePointCloud();
+        }
+
+        public VoxelGoo(VoxelStructure voxelStructure)
+        {
+            this.Value = voxelStructure;
         }
 
         #endregion
@@ -159,16 +177,15 @@ namespace IPMSpatialAnalysis.Goo
         /// <param name="args"></param>
         public void DrawViewportMeshes(GH_PreviewMeshArgs args) 
         {
-            
+            //args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
         }
 
         /// <summary>
-        /// Draws the point cloud preview using a small default point size.
+        /// Draws the point cloud bounding box.
         /// </summary>
         /// <param name="args"></param>
         public void DrawViewportWires(GH_PreviewWireArgs args)
         {
-            args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
         }
 
         public override IGH_GeometricGoo DuplicateGeometry()
@@ -204,7 +221,7 @@ namespace IPMSpatialAnalysis.Goo
                     xform.M30, xform.M31, xform.M32, xform.M33);
 
                 transformedGoo.Value.SetTransformation(transformationMatrix);
-                transformedGoo.UpdatePointCloud();
+                //transformedGoo.UpdatePointCloud();
             }
             return transformedGoo;
         }
@@ -212,39 +229,10 @@ namespace IPMSpatialAnalysis.Goo
         #region Other Methods
 
         /// <summary>
-        /// Updates the point cloud preview. 
-        /// Call this any time the underlying voxel structure changes in some way.
-        /// </summary>
-        public void UpdatePointCloud()
-        {
-            _previewCloud = new PointCloud();
-
-            if (Value.Count < 1) return;
-
-            List<Point3d> points = new List<Point3d>();
-            List<double> values = new List<double>();
-
-            foreach (var voxel in Value.VoxelScalars)
-            {
-                (double x, double y, double z) worldPoint = Value.VoxelToWorld(voxel.Key);
-                points.Add(new Point3d(worldPoint.x, worldPoint.y, worldPoint.z));
-                values.Add(voxel.Value);
-            }
-
-            _previewCloud.AddRange(
-                points,
-                Enumerable.Repeat(new Vector3d(), points.Count),
-                Enumerable.Repeat(Color.Black, points.Count),
-                values);
-        }
-
-        /// <summary>
         /// Calls the normalisation of the underlying voxel structure.
         /// </summary>
         public void Normalise()
         {
-            _previewCloud = new PointCloud();
-
             Value.NormaliseData();
         }
 
@@ -253,8 +241,6 @@ namespace IPMSpatialAnalysis.Goo
         /// </summary>
         public void ColumnNormalise()
         {
-            _previewCloud = new PointCloud();
-
             Value.ColumnNormaliseData();
             //UpdatePointCloud();
         }
@@ -267,8 +253,6 @@ namespace IPMSpatialAnalysis.Goo
         /// <param name="filterZeros">Whether to remove voxels equal to 0</param>
         public void Filter(double minFilterValue, double maxFilterValue, bool filterZeros)
         {
-            _previewCloud = new PointCloud();
-
             Value.FilterByScalarValues(minFilterValue, maxFilterValue, filterZeros);
 
             //UpdatePointCloud();
@@ -289,29 +273,10 @@ namespace IPMSpatialAnalysis.Goo
             Value.ExecuteCustomFunction(function, other.Value);
         }
 
-        /// <summary>
-        /// Updates the colours of the stored point cloud points for previewing using a
-        /// provided scalar range.
-        /// </summary>
-        /// <param name="min">Lower scalar bound</param>
-        /// <param name="max">Upper scalar bound</param>
-        public void UpdatePointCloudColours(double min, double max)
-        {
-            if (_previewCloud == null) UpdatePointCloud();
-
-            foreach (var pointCloudItem in _previewCloud)
-            {
-                double colourFactor = (pointCloudItem.PointValue - min) / (max - min);
-                Color colour = Utilities.Lerp3(Color.Green, Color.Yellow, Color.Red, colourFactor);
-                pointCloudItem.Color = colour;
-            }
-        }
-
         #endregion
         #region Fields
 
         private BoundingBox _boundingBox;
-        private PointCloud _previewCloud;
 
         private Utilities.AggregationMethod _aggregationMethod;
 
