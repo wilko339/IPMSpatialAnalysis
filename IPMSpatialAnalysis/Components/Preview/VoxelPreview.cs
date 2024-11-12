@@ -7,6 +7,7 @@ using Rhino.Geometry;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace IPMSpatialAnalysis.Components.Preview
 {
@@ -60,7 +61,7 @@ namespace IPMSpatialAnalysis.Components.Preview
 
             _weight = weight < 1 ? 1 : weight;
 
-            _displayGoos = new List<VoxelGoo>();
+            _displayClouds = new List<PointCloud>();
 
             foreach (var branch in voxelGoos.Branches)
             {
@@ -70,19 +71,80 @@ namespace IPMSpatialAnalysis.Components.Preview
                     {
                         if (voxelGoo == null) continue;
                         var display = new VoxelGoo((VoxelGoo)voxelGoo);
-
-                        // This needs to change so that the point cloud stores the values,
-                        // and then the display function takes care of the colour.
-                        display.UpdatePointCloud();
-                        display.UpdatePointCloudColours(displayRange.T0, displayRange.T1);
-
-                        _displayGoos.Add(display);
+                        _displayClouds.Add(GeneratePointCloud(display, displayRange.T0, displayRange.T1));
                     }
                 }
             }
-
             _interval = displayRange;
             _voxelGoos = voxelGoos;
+        }
+
+        private PointCloud GeneratePointCloud(VoxelGoo voxelGoo, double min, double max)
+        {
+            PointCloud pointCloud = new PointCloud();
+
+            if (voxelGoo.IsValid)
+            {
+                if (voxelGoo.Count > 0)
+                {
+                    List<Point3d> points = new List<Point3d>();
+                    List<Color> colours = new List<Color>();
+
+                    foreach (var voxel in voxelGoo.Value.VoxelScalars)
+                    {
+                        (double x, double y, double z) worldPoint = voxelGoo.Value.VoxelToWorld(voxel.Key);
+                        points.Add(new Point3d(worldPoint.x, worldPoint.y, worldPoint.z));
+                        double factor = (voxel.Value - min) / (max - min);
+                        colours.Add(Lerp3(Color.Green, Color.Yellow, Color.Red, factor));
+                    }
+
+                    pointCloud.AddRange(
+                        points,
+                        Enumerable.Repeat(new Vector3d(), points.Count),
+                        colours);
+                }
+            }
+
+            return pointCloud;
+        }
+
+        /// <summary>
+        /// Returns a new colour, interpolated from the two provided colours.
+        /// </summary>
+        /// <param name="c1">Low end colour.</param>
+        /// <param name="c2">High end colour.</param>
+        /// <param name="factor">Blending factor (0-1) between the colours.</param>
+        /// <returns>The new colour.</returns>
+        private static Color Lerp2(Color c1, Color c2, double factor)
+        {
+            int r = (int)(c1.R + (c2.R - c1.R) * factor);
+            int g = (int)(c1.G + (c2.G - c1.G) * factor);
+            int b = (int)(c1.B + (c2.B - c1.B) * factor);
+            int a = (int)(c1.A + (c2.A - c1.A) * factor);
+            return Color.FromArgb(a, r, g, b);
+        }
+
+        /// <summary>
+        /// Interpolates between three provided colours to return a new colour.
+        /// </summary>
+        /// <param name="c1">Low end colour.</param>
+        /// <param name="c2">Mid point colour.</param>
+        /// <param name="c3">High end colour.</param>
+        /// <param name="factor">Blending factor (0-1) between the colours.</param>
+        /// <returns>The new colour.</returns>
+        private static Color Lerp3(Color c1, Color c2, Color c3, double factor)
+        {
+            // Clamp the factor to between 0-1.
+            factor = Math.Min(1, Math.Max(factor, 0));
+
+            if (factor < 0.5)
+            {
+                return Lerp2(c1, c2, factor * 2);
+            }
+            else
+            {
+                return Lerp2(c2, c3, (factor - 0.5) * 2);
+            }
         }
 
         /// <summary>
@@ -91,7 +153,7 @@ namespace IPMSpatialAnalysis.Components.Preview
         /// <param name="args"></param>
         public override void DrawViewportWires(IGH_PreviewArgs args)
         {
-            base.DrawViewportWires(args);
+            //base.DrawViewportWires(args);
 
             if (!Locked)
             {
@@ -150,7 +212,7 @@ namespace IPMSpatialAnalysis.Components.Preview
 
                     // Colour block
                     Rectangle colourBlock = new Rectangle(colourBarStartPoint.X, colourBarStartPoint.Y + i * interval, colourBlockWidth, interval);
-                    Color colourBlockColour = Classes.Utilities.Lerp3(Color.Green, Color.Yellow, Color.Red, factor);
+                    Color colourBlockColour = Lerp3(Color.Green, Color.Yellow, Color.Red, factor);
                     args.Display.Draw2dRectangle(colourBlock, Color.Black, lineWeight, colourBlockColour);
 
                     // Separating lines
@@ -175,11 +237,11 @@ namespace IPMSpatialAnalysis.Components.Preview
                     PointF end = new PointF(extremeRightCoord, start.Y);
                     args.Display.Draw2dLine(start, end, Color.Black, 1);
                 }
-                if (_displayGoos.Count > 0)
+                if (_displayClouds.Count > 0)
                 {
-                    foreach (var goo in _displayGoos)
+                    foreach (var cloud in _displayClouds)
                     {
-                        args.Display.DrawPointCloud(goo.PreviewCloud, _weight);
+                        args.Display.DrawPointCloud(cloud, _weight);
                     }
                 }
             }
@@ -206,7 +268,7 @@ namespace IPMSpatialAnalysis.Components.Preview
 
         #region Fields
 
-        private List<VoxelGoo> _displayGoos = new List<VoxelGoo>();
+        private List<PointCloud> _displayClouds = new List<PointCloud>();
         private int _weight = 5;
 
         private GH_Structure<IGH_Goo> _voxelGoos = new GH_Structure<IGH_Goo>();
