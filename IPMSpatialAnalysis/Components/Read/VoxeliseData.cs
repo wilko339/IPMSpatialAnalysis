@@ -4,6 +4,7 @@ using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Parameters;
 using Grasshopper.Kernel.Types;
 using IPMSpatialAnalysis.Classes;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
@@ -60,7 +61,7 @@ namespace IPMSpatialAnalysis.Components.Read
         /// </summary>
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxels", "V", "Output voxel structure.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxels", "V", "Output voxel structure.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -135,6 +136,10 @@ namespace IPMSpatialAnalysis.Components.Read
                                 csv.Read();
                                 csv.ReadHeader();
 
+                                int dataColumnIndex = Array.IndexOf(csv.HeaderRecord, dataColumnName);
+                                int xColumnIndex = Array.IndexOf(csv.HeaderRecord, xColumnName);
+                                int yColumnIndex = Array.IndexOf(csv.HeaderRecord, yColumnName);
+
                                 int counter = 0;
 
                                 (double x, double y, double z, double scalar)[] pointsBlock = new (double x, double y, double z, double scalar)[blockSize];
@@ -144,9 +149,9 @@ namespace IPMSpatialAnalysis.Components.Read
                                 {
                                     if (counter % _pointReadInterval == 0)
                                     {
-                                        double photodiodeReading = csv.GetField<double>(dataColumnName);
-                                        double x = csv.GetField<double>(xColumnName);
-                                        double y = csv.GetField<double>(yColumnName);
+                                        double photodiodeReading = csv.GetField<double>(dataColumnIndex);
+                                        double x = csv.GetField<double>(xColumnIndex);
+                                        double y = csv.GetField<double>(yColumnIndex);
 
                                         Point2d currentPoint = new Point2d(x, y);
 
@@ -162,7 +167,8 @@ namespace IPMSpatialAnalysis.Components.Read
                                 }
                                 if (blockIndex > 0)
                                 {
-                                    voxelData.AddPoints(pointsBlock);
+                                    // Don't allow unused zero points to be added.
+                                    voxelData.AddPoints(pointsBlock.Take(blockIndex));
                                 }
                             }
                         });
@@ -266,7 +272,6 @@ namespace IPMSpatialAnalysis.Components.Read
 
         private GH_Structure<GH_String> _files = new GH_Structure<GH_String>();
         private GH_Structure<GH_Number> _layerHeights = new GH_Structure<GH_Number>();
-        private GH_Structure<VoxelGoo> _voxelGoo;
         private Dictionary<GH_Path, VoxelStructure> _voxelStructure;
 
         private const double _samplingRate = 100000;
