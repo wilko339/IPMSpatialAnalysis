@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using Grasshopper.Kernel;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
@@ -25,7 +26,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "VD", "Input voxel data.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "VD", "Input voxel data.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Voxel Radius", "R", "Radius of voxels to use in the calculation.", GH_ParamAccess.item, 1);
         }
 
@@ -34,7 +35,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "V", "Getis-Ord voxel data.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "V", "Getis-Ord voxel data.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -45,7 +46,6 @@ namespace IPMSpatialAnalysis.Components.Analysis
         {
             VoxelGoo voxelGoo = new VoxelGoo();
             int voxelRadius = 0;
-            double decay = 0;
 
             if (!DA.GetData("Voxel Data", ref voxelGoo)) return;
             if (!DA.GetData("Voxel Radius", ref voxelRadius)) return;

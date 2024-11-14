@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 
 using Grasshopper.Kernel;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using Rhino.Geometry;
 
@@ -24,7 +25,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "V", "Input voxel data to column normalise.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "V", "Input voxel data to column normalise.", GH_ParamAccess.item);
         }
 
         /// <summary>
@@ -32,7 +33,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "V", "Normalised voxel data.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "V", "Normalised voxel data.", GH_ParamAccess.item);
         }
 
         /// <summary>

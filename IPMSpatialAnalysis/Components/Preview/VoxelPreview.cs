@@ -1,6 +1,7 @@
 ﻿using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
@@ -28,7 +29,7 @@ namespace IPMSpatialAnalysis.Components.Preview
         /// </summary>
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "V", "Input voxel data to filter.", GH_ParamAccess.tree);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "V", "Input voxel data to filter.", GH_ParamAccess.tree);
             pManager.AddIntervalParameter("Scalar Range", "R", "Sets a custom scalar range for colouring.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Point Weight", "W", "The weight of the display points.", GH_ParamAccess.item, 5);
             pManager.AddTextParameter("Colourbar Title", "T", "Sets a custom title for the colourbar.", GH_ParamAccess.item, "");
@@ -47,12 +48,12 @@ namespace IPMSpatialAnalysis.Components.Preview
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            GH_Structure<IGH_Goo> voxelGoos = new GH_Structure<IGH_Goo>();
+            GH_Structure<VoxelGoo> voxelGoos = new GH_Structure<VoxelGoo>();
             Interval displayRange = new Interval();
             int weight = 2;
             string colourBarTitle = "";
 
-            if (!DA.GetDataTree("Voxel Data", out voxelGoos)) return;
+            if (!DA.GetDataTree(0, out voxelGoos)) return;
             if (!DA.GetData("Scalar Range", ref displayRange)) return;
             if (!DA.GetData("Point Weight", ref weight)) return;
             if (!DA.GetData("Colourbar Title", ref colourBarTitle)) return;
@@ -237,6 +238,7 @@ namespace IPMSpatialAnalysis.Components.Preview
                     PointF end = new PointF(extremeRightCoord, start.Y);
                     args.Display.Draw2dLine(start, end, Color.Black, 1);
                 }
+
                 if (_displayClouds.Count > 0)
                 {
                     foreach (var cloud in _displayClouds)
@@ -271,7 +273,7 @@ namespace IPMSpatialAnalysis.Components.Preview
         private List<PointCloud> _displayClouds = new List<PointCloud>();
         private int _weight = 5;
 
-        private GH_Structure<IGH_Goo> _voxelGoos = new GH_Structure<IGH_Goo>();
+        private GH_Structure<VoxelGoo> _voxelGoos = new GH_Structure<VoxelGoo>();
         private Interval _interval = new Interval();
 
         private string _colourBarTitle = "";

@@ -1,9 +1,9 @@
-﻿using MathNet.Numerics.Statistics;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using MathNet.Numerics.Statistics;
 
 namespace IPMSpatialAnalysis.Classes
 {
@@ -121,6 +121,7 @@ namespace IPMSpatialAnalysis.Classes
         public void AddPoint(double x, double y, double z, double scalarValue)
         {
             var key = WorldToVoxel(x, y, z);
+
             if (!_voxelStructure.TryGetValue(key, out var voxelData))
             {
                 voxelData = new VoxelData();

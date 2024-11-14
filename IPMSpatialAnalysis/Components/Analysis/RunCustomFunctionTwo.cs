@@ -1,5 +1,6 @@
 ﻿using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using System;
 
@@ -22,8 +23,8 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data 1", "V", "Input voxel data 1.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Voxel Data 2", "V", "Input voxel data 2.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data 1", "V", "Input voxel data 1.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data 2", "V", "Input voxel data 2.", GH_ParamAccess.item);
             pManager.AddGenericParameter("Function", "F", "Function of the form Func<float, float, float>.", GH_ParamAccess.item);
         }
 
@@ -32,7 +33,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "V", "Output voxel data.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "V", "Output voxel data.", GH_ParamAccess.item);
         }
 
         /// <summary>

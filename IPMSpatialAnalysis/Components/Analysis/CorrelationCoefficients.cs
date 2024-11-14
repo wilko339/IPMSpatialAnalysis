@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 
 using Grasshopper.Kernel;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using MathNet.Numerics.Distributions;
 using MathNet.Numerics.Statistics;
-using Rhino.Geometry;
 
 namespace IPMSpatialAnalysis.Components.Analysis
 {
@@ -27,8 +26,8 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data 1", "VD1", "First voxel dataset.", GH_ParamAccess.item);
-            pManager.AddGenericParameter("Voxel Data 2", "VD2", "Second voxel dataset.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data 1", "VD1", "First voxel dataset.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data 2", "VD2", "Second voxel dataset.", GH_ParamAccess.item);
         }
 
         /// <summary>

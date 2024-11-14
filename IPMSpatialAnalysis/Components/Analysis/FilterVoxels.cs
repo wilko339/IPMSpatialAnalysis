@@ -1,4 +1,5 @@
 ﻿using Grasshopper.Kernel;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
@@ -23,7 +24,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterInputParams(GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "V", "Input voxel data to filter.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "V", "Input voxel data to filter.", GH_ParamAccess.item);
             pManager.AddIntervalParameter("Scalar Range", "R", "Colour map range.", GH_ParamAccess.item);
             pManager.AddBooleanParameter("Remove Zeros", "Z", "Boolean flag to remove or keep zero voxels", GH_ParamAccess.item, false);
             pManager.AddBooleanParameter("Normalise", "N", "Whether or not to normalise the output data using z scaling before filtering.", GH_ParamAccess.item, false);
@@ -34,7 +35,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         /// </summary>
         protected override void RegisterOutputParams(GH_OutputParamManager pManager)
         {
-            pManager.AddGenericParameter("Filtered Voxel Data", "V", "Filtered voxel data.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Filtered Voxel Data", "V", "Filtered voxel data.", GH_ParamAccess.item);
         }
 
         /// <summary>
