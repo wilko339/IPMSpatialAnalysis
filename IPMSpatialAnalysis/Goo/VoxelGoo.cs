@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Types;
@@ -58,8 +59,6 @@ namespace IPMSpatialAnalysis.Goo
                     .ThenBy(kvp => kvp.Key.Item3)
                     .Select(kvp => Value.VoxelToWorld(kvp.Key))
                     .ToList();
-
-                return Value.VoxelScalars.Keys.Select(item => Value.VoxelToWorld(item)).ToList();
             }
         }
 
@@ -75,8 +74,6 @@ namespace IPMSpatialAnalysis.Goo
                     .ThenBy(kvp => kvp.Key.Item3)
                     .Select(kvp => kvp.Key)
                     .ToList();
-
-                return Value.VoxelScalars.Keys.ToList();
             }
         }
 
@@ -177,7 +174,7 @@ namespace IPMSpatialAnalysis.Goo
         /// <param name="args"></param>
         public void DrawViewportMeshes(GH_PreviewMeshArgs args) 
         {
-            //args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
+            args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
         }
 
         /// <summary>
