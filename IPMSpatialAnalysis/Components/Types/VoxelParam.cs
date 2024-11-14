@@ -1,0 +1,61 @@
+﻿using System;
+using System.Collections.Generic;
+using Grasshopper.Kernel;
+using IPMSpatialAnalysis.Goo;
+using Rhino.Geometry;
+
+namespace IPMSpatialAnalysis.Components.Types
+
+{
+    public class VoxelParam : GH_PersistentGeometryParam<VoxelGoo>, IGH_PreviewObject
+    {
+        public override Guid ComponentGuid => new Guid("5A106831-86DF-4D41-B38F-53D0D54FDEB3");
+
+        public bool IsPreviewCapable => true;
+
+        public BoundingBox ClippingBox
+        {
+            get
+            {
+                return Preview_ComputeClippingBox();
+            }
+        }
+
+        bool _hidden;
+        public bool Hidden 
+        {
+            get
+            {
+                return _hidden;
+            }
+            set
+            {
+                _hidden = value;
+            }
+        }
+
+        public VoxelParam()
+            : base(new GH_InstanceDescription("Voxel Structure", "Voxels", "A voxel structure", "IPMSpatialAnalysis", "Types"))
+        { }
+
+        public void DrawViewportMeshes(IGH_PreviewArgs args)
+        {
+            // Preview_DrawMeshes(args);
+        }
+
+        public void DrawViewportWires(IGH_PreviewArgs args)
+        {
+            Preview_DrawWires(args);
+        }
+
+        protected override GH_GetterResult Prompt_Singular(ref VoxelGoo value)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override GH_GetterResult Prompt_Plural(ref List<VoxelGoo> values)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}
