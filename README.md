@@ -11,7 +11,7 @@ The class can be used without Rhino/Grasshopper if required.
 
 ## Acknowledgements
 This project has received funding from the European Union’s Horizon
-2020 research and innovation programme under the Marie Sk lodowska-Curie grant
+2020 research and innovation programme under the Marie Sklodowska-Curie grant
 agreement No 956401.
 
 ![eu_logo](https://github.com/user-attachments/assets/d1debb01-b20d-4851-a7b0-1b8cacd10df9)
