@@ -15,7 +15,7 @@ namespace IPMSpatialAnalysis.Components.Read
         /// </summary>
         public VoxelisePores()
           : base("VoxelisePores", "VoxelisePores",
-              "Voxelises a list of pore meshes using inverse exponential distance weighting.",
+              "Voxelises a list of pore meshes using inverse exponential distance weighting. This may take a while if the input meshes have lots of faces.",
               "IPMSpatialAnalysis", "Read")
         {
         }
@@ -63,13 +63,15 @@ namespace IPMSpatialAnalysis.Components.Read
             List<(double, double, double, double)> poreData = new List<(double, double, double, double)>();
             newGoo.Value.SetVoxelDataValues(0);
 
-            var voxelCentres = newGoo.VoxelCoords
+            var voxelCentres = newGoo.WorldCoords
                 .Select(p => new Point3d(p.x, p.y, p.z))
                 .ToList();
 
             var validPoreMeshes = FixPoreMeshes(poreMeshes);
             var poreCentres = validPoreMeshes
                 .Select(pore => pore.GetBoundingBox(true).Center).ToList();
+
+            List<double> poreVolumes = validPoreMeshes.Select(m => m.Volume()).ToList();
 
             if (poreCentres.Count < 1)
             {
@@ -79,7 +81,7 @@ namespace IPMSpatialAnalysis.Components.Read
         
             int voxelCounter = 0;
 
-            var closestKPoints = RTree.Point3dKNeighbors(poreCentres, voxelCentres, kClosestPoints);
+            var closestKPoints = RTree.Point3dKNeighbors(poreCentres, voxelCentres, Math.Min(kClosestPoints, poreCentres.Count));
 
             try
             {
@@ -94,7 +96,7 @@ namespace IPMSpatialAnalysis.Components.Read
                         {
                             double distance = voxelCentre.DistanceTo(poreCentres[poreIndex]);
 
-                            inverseDistanceSum += Math.Exp(-distance);
+                            inverseDistanceSum += poreVolumes[poreIndex] * Math.Exp(-distance);
                         }
                         var voxelKey = newGoo.Value.WorldToVoxel(voxelCentre.X, voxelCentre.Y, voxelCentre.Z);
                         newGoo.Value.SetVoxelDataValue(voxelKey, inverseDistanceSum);
@@ -107,8 +109,9 @@ namespace IPMSpatialAnalysis.Components.Read
                 AddRuntimeMessage(GH_RuntimeMessageLevel.Error, e.Message);
                 return;
             }
-            
+
             newGoo.Value.UpdateStatistics();
+
             DA.SetData(0, newGoo);
         }
 
