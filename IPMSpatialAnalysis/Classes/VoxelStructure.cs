@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Grasshopper.GUI;
 using MathNet.Numerics.Statistics;
 
 namespace IPMSpatialAnalysis.Classes
@@ -272,6 +273,64 @@ namespace IPMSpatialAnalysis.Classes
             _mean = _sum / _nonNullCount;
         }
 
+        public void Sigmoid(double factor)
+        {
+            var voxelKeys = _voxelStructure.Keys.ToList();
+
+            // Then apply the sigmoid function
+            Parallel.ForEach(voxelKeys, voxelKey =>
+            {
+                var value = _voxelStructure[voxelKey].Value.Value;
+                _voxelStructure[voxelKey].Value = 1 / (1 + Math.Exp(-factor * value));
+            });
+
+            UpdateStatistics();
+
+            SetNullStoredRawData();
+        }
+
+        /// <summary>
+        /// Remaps the voxel values to the given range.
+        /// </summary>
+        /// <param name="low"></param>
+        /// <param name="high"></param>
+        public void RemapVoxelValues(double low, double high)
+        {
+            UpdateStatistics();
+
+            var voxelKeys = _voxelStructure.Keys.ToList();
+
+            Parallel.ForEach(voxelKeys, voxelKey =>
+            {
+                var value = _voxelStructure[voxelKey].Value.Value;
+                _voxelStructure[voxelKey].Value = (value - _min) / (_max - _min) * (high - low) + low ;
+            });
+
+            UpdateStatistics();
+            SetNullStoredRawData();
+        }
+
+        /// <summary>
+        /// Remaps the voxel values to the given range.
+        /// </summary>
+        /// <param name="low"></param>
+        /// <param name="high"></param>
+        public void RemapVoxelValues(double inputMin, double inputMax, double outputMin, double outputMax)
+        {
+            UpdateStatistics();
+
+            var voxelKeys = _voxelStructure.Keys.ToList();
+
+            Parallel.ForEach(voxelKeys, voxelKey =>
+            {
+                var value = _voxelStructure[voxelKey].Value.Value;
+                _voxelStructure[voxelKey].Value = (value - inputMin) / (inputMax - inputMin) * (outputMax - outputMin) + outputMin;
+            });
+
+            UpdateStatistics();
+            SetNullStoredRawData();
+        }
+
         /// <summary>
         /// Normalises the data using it's mean and standard deviation.
         /// </summary>
@@ -289,6 +348,50 @@ namespace IPMSpatialAnalysis.Classes
             {
                 var value = _voxelStructure[voxelKey].Value.Value;
                 _voxelStructure[voxelKey].Value = (value - mean) / standardDeviation;
+            });
+
+            UpdateStatistics();
+            // The stored raw data doesn't really relate to the scalar value
+            // so we may as well free up memory.
+            SetNullStoredRawData();
+        }
+
+        public void MaxMinNormaliseData()
+        {
+            if (VoxelScalars.Count < 1) return;
+            var nonNANs = VoxelScalars.Values.Where(x => !double.IsNaN(x));
+            double max = nonNANs.Max();
+            double min = nonNANs.Min();
+
+            MaxMinNormaliseData(min, max);
+        }
+
+        public void MaxMinNormaliseData(double min, double max)
+        {
+            var voxelKeys = _voxelStructure.Keys.ToList();
+
+            // Update the values in the dictionary
+            Parallel.ForEach(voxelKeys, voxelKey =>
+            {
+                var value = _voxelStructure[voxelKey].Value.Value;
+                _voxelStructure[voxelKey].Value = (value - min) / (max - min);
+            });
+
+            UpdateStatistics();
+            // The stored raw data doesn't really relate to the scalar value
+            // so we may as well free up memory.
+            SetNullStoredRawData();
+        }
+
+        public void ClampVoxelValues(double min, double max)
+        {
+            var voxelKeys = _voxelStructure.Keys.ToList();
+
+            // Update the values in the dictionary
+            Parallel.ForEach(voxelKeys, voxelKey =>
+            {
+                var value = _voxelStructure[voxelKey].Value.Value;
+                _voxelStructure[voxelKey].Value = Math.Max(Math.Min(value, max), min);
             });
 
             UpdateStatistics();
@@ -412,11 +515,6 @@ namespace IPMSpatialAnalysis.Classes
             UpdateStatistics();
         }
 
-        /// <summary>
-        /// Calculates the spatial correlation for the entire voxel structure. 
-        /// The getisRadius determines the number of voxel layers in the neighbourhood.
-        /// </summary>
-        /// <param name="getisRadius"></param>
         public void CalculateSpatialCorrelation(int getisRadius)
         {
             var voxelKeys = _voxelStructure.Keys.ToList();
@@ -428,6 +526,37 @@ namespace IPMSpatialAnalysis.Classes
             Parallel.ForEach(voxelKeys, voxel =>
             {
                 double go = CalculateGetisOrd(voxel.Item1, voxel.Item2, voxel.Item3, getisRadius);
+                VoxelData newData = new VoxelData(go);
+
+                newVoxelData.TryAdd(voxel, newData);
+            });
+
+            _voxelStructure = new Dictionary<(int, int, int), VoxelData>(newVoxelData);
+
+            // Then update this again with the new data.
+            UpdateStatistics();
+
+            // The stored raw data doesn't really relate to the scalar value
+            // so we may as well free up memory.
+            SetNullStoredRawData();
+        }
+
+        /// <summary>
+        /// Calculates the spatial correlation for the entire voxel structure. 
+        /// The getisRadius determines the number of voxel layers in the neighbourhood.
+        /// </summary>
+        /// <param name="getisRadius"></param>
+        public void CalculateSpatialCorrelation(int getisRadius, double globalMean, double globalStandardDeviation)
+        {
+            var voxelKeys = _voxelStructure.Keys.ToList();
+            ConcurrentDictionary<(int, int, int), VoxelData> newVoxelData = new ConcurrentDictionary<(int, int, int), VoxelData>();
+
+            // Make sure we have up to date statistics.
+            UpdateStatistics();
+
+            Parallel.ForEach(voxelKeys, voxel =>
+            {
+                double go = CalculateGetisOrd(voxel.Item1, voxel.Item2, voxel.Item3, getisRadius, globalMean, globalStandardDeviation);
                 VoxelData newData = new VoxelData(go);
 
                 newVoxelData.TryAdd(voxel, newData);
@@ -494,7 +623,8 @@ namespace IPMSpatialAnalysis.Classes
 
             foreach (var voxel in keys)
             {
-                _voxelStructure[voxel].ScalarData = null;
+                if (_voxelStructure[voxel].ScalarData != null)
+                    _voxelStructure[voxel].ScalarData = null;
             }
         }
 
@@ -682,6 +812,12 @@ namespace IPMSpatialAnalysis.Classes
             return outValue;
         }
 
+        private double CalculateGetisOrd(int x, int y, int z, int getisRadius)
+        {
+            return CalculateGetisOrd(x, y, z, getisRadius, Mean, StandardDeviation);
+        }
+
+
         /// <summary>
         /// Calculates the Getis-ord Gi spatial correlation for the specified voxel. 
         /// </summary>
@@ -690,7 +826,7 @@ namespace IPMSpatialAnalysis.Classes
         /// <param name="z">Voxel space z coordinate.</param>
         /// <param name="getisRadius">Voxel radius for calculation.</param>
         /// <returns></returns>
-        private double CalculateGetisOrd(int x, int y, int z, int getisRadius)
+        private double CalculateGetisOrd(int x, int y, int z, int getisRadius, double mean, double standardDeviation)
         {
             double sumWeights = 0;
 
@@ -728,8 +864,8 @@ namespace IPMSpatialAnalysis.Classes
                 sumWeights2 += weights[i] * weights[i];
             }
 
-            var numerator = weightedSum - (Mean * sumWeights);
-            var denominator = StandardDeviation *
+            var numerator = weightedSum - (mean * sumWeights);
+            var denominator = standardDeviation *
                 Math.Sqrt((Count * sumWeights2 - (sumWeights * sumWeights)) / (Count - 1));
 
             double go = numerator / denominator;
