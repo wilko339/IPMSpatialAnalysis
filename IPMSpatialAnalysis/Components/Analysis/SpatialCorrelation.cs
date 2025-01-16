@@ -28,6 +28,10 @@ namespace IPMSpatialAnalysis.Components.Analysis
         {
             pManager.AddParameter(new VoxelParam(), "Voxel Data", "VD", "Input voxel data.", GH_ParamAccess.item);
             pManager.AddIntegerParameter("Voxel Radius", "R", "Radius of voxels to use in the calculation.", GH_ParamAccess.item, 1);
+            pManager.AddNumberParameter("Global Mean", "M", "A specified global mean value to use. Otherwise, the mean of the structure is used.", GH_ParamAccess.item);
+            pManager.AddNumberParameter("Global STD", "S", "A specified global standard deviation value to use. Otherwise, the standard deviation of the structure is used.", GH_ParamAccess.item);
+            pManager[2].Optional = true;
+            pManager[3].Optional = true;
         }
 
         /// <summary>
@@ -46,12 +50,21 @@ namespace IPMSpatialAnalysis.Components.Analysis
         {
             VoxelGoo voxelGoo = new VoxelGoo();
             int voxelRadius = 0;
+            double globalMean = double.MinValue;
+            double globalSTD = double.MinValue;
 
             if (!DA.GetData("Voxel Data", ref voxelGoo)) return;
             if (!DA.GetData("Voxel Radius", ref voxelRadius)) return;
 
+            bool globalValues = DA.GetData(2, ref globalMean) & DA.GetData(3, ref globalSTD);
+
             VoxelGoo newGoo = new VoxelGoo(voxelGoo);
-            newGoo.CalculateGetisOrd(voxelRadius);
+
+            if (!globalValues) newGoo.CalculateGetisOrd(voxelRadius);
+            else if (globalValues)
+            {
+                newGoo.CalculateGetisOrd(voxelRadius, globalMean, globalSTD);
+            }
 
             DA.SetData(0, newGoo);
         }
