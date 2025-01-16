@@ -57,12 +57,17 @@ namespace IPMSpatialAnalysis.Components.Read
                 csv.Read();
                 csv.ReadHeader();
 
+                int xColumnIndex = Array.IndexOf(csv.HeaderRecord, "x");
+                int yColumnIndex = Array.IndexOf(csv.HeaderRecord, "y");
+                int zColumnIndex = Array.IndexOf(csv.HeaderRecord, "z");
+                int valueColumnIndex = Array.IndexOf(csv.HeaderRecord, "value");
+
                 while (csv.Read())
                 {
-                    int x = csv.GetField<int>("x");
-                    int y = csv.GetField<int>("y");
-                    int z = csv.GetField<int>("z");
-                    double value = csv.GetField<double>("value");
+                    int x = csv.GetField<int>(xColumnIndex);
+                    int y = csv.GetField<int>(yColumnIndex);
+                    int z = csv.GetField<int>(zColumnIndex);
+                    double value = csv.GetField<double>(valueColumnIndex);
 
                     voxelStructure.AddVoxelValue((x, y, z), value);
                 }
