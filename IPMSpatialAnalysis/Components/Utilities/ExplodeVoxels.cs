@@ -1,5 +1,7 @@
 ﻿using Grasshopper.Kernel;
+using Grasshopper.Kernel.Data;
 using Grasshopper.Kernel.Types;
+using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
@@ -26,7 +28,7 @@ namespace IPMSpatialAnalysis.Components.Utilities
         /// </summary>
         protected override void RegisterInputParams(GH_Component.GH_InputParamManager pManager)
         {
-            pManager.AddGenericParameter("Voxel Data", "VD", "Input voxel data to filter.", GH_ParamAccess.item);
+            pManager.AddParameter(new VoxelParam(), "Voxel Data", "VD", "Input voxel data to filter.", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -34,9 +36,9 @@ namespace IPMSpatialAnalysis.Components.Utilities
         /// </summary>
         protected override void RegisterOutputParams(GH_Component.GH_OutputParamManager pManager)
         {
-            pManager.AddPointParameter("Voxel Centres", "P", "Voxel centre points.", GH_ParamAccess.list);
-            pManager.AddPointParameter("Voxel Indices", "I", "Voxel indices", GH_ParamAccess.list);
-            pManager.AddNumberParameter("Voxel Values", "V", "Voxel values", GH_ParamAccess.list);
+            pManager.AddPointParameter("Voxel Centres", "P", "Voxel centre points.", GH_ParamAccess.tree);
+            pManager.AddPointParameter("Voxel Indices", "I", "Voxel indices", GH_ParamAccess.tree);
+            pManager.AddNumberParameter("Voxel Values", "V", "Voxel values", GH_ParamAccess.tree);
         }
 
         /// <summary>
@@ -45,20 +47,27 @@ namespace IPMSpatialAnalysis.Components.Utilities
         /// <param name="DA">The DA object is used to retrieve from inputs and store in outputs.</param>
         protected override void SolveInstance(IGH_DataAccess DA)
         {
-            VoxelGoo voxelGoo = new VoxelGoo();
-            if (!DA.GetData("Voxel Data", ref voxelGoo)) return;
+            GH_Structure<VoxelGoo> voxelGooStructure = new GH_Structure<VoxelGoo>();
+            if (!DA.GetDataTree(0, out voxelGooStructure)) return;
 
-            List<GH_Point> outPoints = new List<GH_Point>();
-            List<GH_Point> outIndices = new List<GH_Point>();
-            List<double> outValues = new List<double>();
+            GH_Structure<GH_Point> outPoints = new GH_Structure<GH_Point>();
+            GH_Structure<GH_Point> outIndices = new GH_Structure<GH_Point>();
+            GH_Structure<GH_Number> outValues = new GH_Structure<GH_Number>();
 
-            outValues = voxelGoo.VoxelScalars;
-            outPoints = voxelGoo.WorldCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))).ToList();
-            outIndices = voxelGoo.VoxelCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))).ToList();
+            foreach (GH_Path path in voxelGooStructure.Paths)
+            {
+                foreach (VoxelGoo goo in voxelGooStructure[path])
+                {
+                    if (goo == null) continue;
+                            outValues.AppendRange(goo.VoxelScalars.Select(n => new GH_Number(n)), path);
+                    //outPoints.AppendRange(goo.WorldCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))), path);
+                    outIndices.AppendRange(goo.VoxelCoords.Select(p => new GH_Point(new Point3d(p.x, p.y, p.z))), path);
+                }
+            }
 
-            DA.SetDataList(0, outPoints);
-            DA.SetDataList(1, outIndices);
-            DA.SetDataList(2, outValues);
+            DA.SetDataTree(0, outPoints);
+            DA.SetDataTree(1, outIndices);
+            DA.SetDataTree(2, outValues);
         }
 
         /// <summary>
