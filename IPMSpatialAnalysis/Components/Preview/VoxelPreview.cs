@@ -1,19 +1,33 @@
-﻿using Grasshopper.Kernel;
+﻿using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using Grasshopper.Kernel;
 using Grasshopper.Kernel.Data;
-using Grasshopper.Kernel.Types;
 using IPMSpatialAnalysis.Components.Types;
 using IPMSpatialAnalysis.Goo;
 using IPMSpatialAnalysis.Properties;
 using Rhino.Geometry;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
 
 namespace IPMSpatialAnalysis.Components.Preview
 {
     public class VoxelPreview : GH_Component, IGH_PreviewObject
     {
+        public override BoundingBox ClippingBox
+        {
+            get
+            {
+                var clippingBox = base.ClippingBox;
+                if (_displayClouds != null)
+                {
+                    foreach (var cloud in _displayClouds)
+                    {
+                        clippingBox.Union(cloud.GetBoundingBox(false));
+                    }
+                }
+                return clippingBox;
+            }
+        }
         /// <summary>
         /// Initializes a new instance of the VoxelPreview class.
         /// </summary>
@@ -118,11 +132,16 @@ namespace IPMSpatialAnalysis.Components.Preview
         /// <returns>The new colour.</returns>
         private static Color Lerp2(Color c1, Color c2, double factor)
         {
-            int r = (int)(c1.R + (c2.R - c1.R) * factor);
-            int g = (int)(c1.G + (c2.G - c1.G) * factor);
-            int b = (int)(c1.B + (c2.B - c1.B) * factor);
-            int a = (int)(c1.A + (c2.A - c1.A) * factor);
-            return Color.FromArgb(a, r, g, b);
+            if (factor != double.NaN)
+            {
+                int r = (int)(c1.R + (c2.R - c1.R) * factor);
+                int g = (int)(c1.G + (c2.G - c1.G) * factor);
+                int b = (int)(c1.B + (c2.B - c1.B) * factor);
+                int a = (int)(c1.A + (c2.A - c1.A) * factor);
+                return Color.FromArgb(a, r, g, b);
+            }
+            else
+                return Color.Black;
         }
 
         /// <summary>
