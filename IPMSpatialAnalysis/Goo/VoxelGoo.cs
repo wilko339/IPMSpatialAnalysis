@@ -12,7 +12,7 @@ namespace IPMSpatialAnalysis.Goo
     /// <summary>
     /// This class is the Goo interface between the backend VoxelStructure and Grasshopper.
     /// </summary>
-    public class VoxelGoo : GH_GeometricGoo<VoxelStructure>, IGH_PreviewData
+    public class VoxelGoo : GH_GeometricGoo<VoxelStructure>, IGH_PreviewData, IGH_Goo
     {
         #region Properties
 
@@ -174,7 +174,6 @@ namespace IPMSpatialAnalysis.Goo
         /// <param name="args"></param>
         public void DrawViewportMeshes(GH_PreviewMeshArgs args) 
         {
-            args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
         }
 
         /// <summary>
@@ -183,6 +182,7 @@ namespace IPMSpatialAnalysis.Goo
         /// <param name="args"></param>
         public void DrawViewportWires(GH_PreviewWireArgs args)
         {
+            args.Pipeline.DrawBox(Boundingbox, Color.DarkOliveGreen);
         }
 
         public override IGH_GeometricGoo DuplicateGeometry()
@@ -233,6 +233,36 @@ namespace IPMSpatialAnalysis.Goo
             Value.NormaliseData();
         }
 
+        public void MaxMinNormalise()
+        {
+            Value.MaxMinNormaliseData();
+        }
+
+        public void MaxMinNormalise(double min, double max)
+        {
+            Value.MaxMinNormaliseData(min, max);
+        }
+
+        public void Remap(double outputMin, double outputMax)
+        {
+            Value.RemapVoxelValues(outputMin, outputMax);
+        }
+
+        public void Remap(double inputMin, double inputMax, double outputMin, double outputMax)
+        {
+            Value.RemapVoxelValues(inputMin, inputMax, outputMin, outputMax);
+        }
+
+        public void Clamp(double min, double max)
+        {
+            Value.ClampVoxelValues(min, max);
+        }
+
+        public void Sigmoid(double factor)
+        {
+            Value.Sigmoid(factor);
+        }
+
         /// <summary>
         /// Calls the column normalisation method of the underlying voxel structure.
         /// </summary>
@@ -263,6 +293,16 @@ namespace IPMSpatialAnalysis.Goo
         {
             Value.CalculateSpatialCorrelation(radius);
             //UpdatePointCloud();
+        }
+
+        public void CalculateGetisOrd(int radius, double globalMean, double globalStandardDeviation)
+        {
+            Value.CalculateSpatialCorrelation(radius, globalMean, globalStandardDeviation);
+        }
+
+        public void RunCustomFunction(Func<double, double> function)
+        {
+            Value.ExecuteCustomFunction(function);
         }
 
         public void RunCustomFunction(Func<double, double, double> function, VoxelGoo other)
