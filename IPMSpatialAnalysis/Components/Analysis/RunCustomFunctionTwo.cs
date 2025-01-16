@@ -14,7 +14,7 @@ namespace IPMSpatialAnalysis.Components.Analysis
         public RunCustomFunctionTwo()
           : base("RunCustomFunctionTwo", "CustomFunction",
               "Runs a custom delegate function for each pair of corresponding voxel values in two structures.",
-              "IPMSpatialAnalysis", "Analysis")
+              "IPMSpatialAnalysis", "Function")
         {
         }
 
