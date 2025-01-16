@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -42,6 +43,9 @@ namespace IPMSpatialAnalysis.Components.Read
             pManager.AddNumberParameter("Layer Heights", "L", "The layer height corresponding to each file in the input filepaths.", GH_ParamAccess.tree);
             pManager.AddIntegerParameter("Point Read Interval", "P", "Sets the point reading frequency. Use higher numbers for downsampling, or 1 for full sampling.", GH_ParamAccess.item, 1);
             pManager.AddNumberParameter("Voxel Size", "V", "The output voxel size.", GH_ParamAccess.item, 1);
+
+            pManager.AddIntervalParameter("Value Interval", "I", "Interval to specify range of acceptable scalar values.", GH_ParamAccess.item);
+            pManager[7].Optional = true;
 
             var iMethod = pManager.AddIntegerParameter("Method", "M",
                 "Method to use for extracting the feature. 0 = Mean, 1 = Standard Dev, 2 = Skewness, 3 = Count.", GH_ParamAccess.item, 1);
@@ -84,7 +88,8 @@ namespace IPMSpatialAnalysis.Components.Read
             int aggregationRadius = 0;
             bool rereadData = false;
 
-            Interval valueRange = new Interval(0, 1);
+            Interval valueRange = Interval.Unset;
+            bool restrictValues = false;
 
             if (!DA.GetDataTree("Input", out fileTree)) return;
             if (!DA.GetData(1, ref xColumnName)) return;
@@ -93,6 +98,7 @@ namespace IPMSpatialAnalysis.Components.Read
             if (!DA.GetDataTree("Layer Heights", out layerHeights)) return;
             if (!DA.GetData("Point Read Interval", ref pointReadInterval)) return;
             if (!DA.GetData("Voxel Size", ref voxelSize)) return;
+            if (DA.GetData("Value Interval", ref valueRange)) restrictValues = true;
             if (!DA.GetData("Method", ref method)) return;
             if (!DA.GetData("Extraction Radius", ref aggregationRadius)) return;
             if (!DA.GetData("Reset", ref rereadData)) return;
@@ -128,7 +134,10 @@ namespace IPMSpatialAnalysis.Components.Read
                         // Set the buffer size
                         int blockSize = 10000;
 
-                        Parallel.For(0, filePaths.Count ,i =>
+                        Parallel.For(0, 
+                            filePaths.Count,
+                            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount / 2},
+                            i =>
                         {
                             using (StreamReader reader = new StreamReader(File.OpenRead(filePaths[i])))
                             {
@@ -149,11 +158,15 @@ namespace IPMSpatialAnalysis.Components.Read
                                 {
                                     if (counter % _pointReadInterval == 0)
                                     {
-                                        double photodiodeReading = csv.GetField<double>(dataColumnIndex);
-                                        double x = csv.GetField<double>(xColumnIndex);
-                                        double y = csv.GetField<double>(yColumnIndex);
+                                        double photodiodeReading = double.Parse(csv.GetField(dataColumnIndex));
 
-                                        Point2d currentPoint = new Point2d(x, y);
+                                        if (restrictValues)
+                                        {
+                                            if (!valueRange.IncludesParameter(photodiodeReading)) continue;
+                                        }
+
+                                        double x = double.Parse(csv.GetField(xColumnIndex));
+                                        double y = double.Parse(csv.GetField(yColumnIndex));
 
                                         pointsBlock[blockIndex++] = (x, y, heights[i], photodiodeReading);
 
