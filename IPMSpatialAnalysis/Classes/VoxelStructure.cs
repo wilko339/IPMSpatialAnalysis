@@ -224,6 +224,18 @@ namespace IPMSpatialAnalysis.Classes
             }
         }
 
+        public void GetVoxelDataValue((int, int, int) key, out double value)
+        {
+            if (_voxelStructure.TryGetValue(key, out var voxelData))
+            {
+                value = voxelData.Value.Value;
+            }
+            else
+            {
+                value = double.NaN; // or some default value
+            }
+        }
+
         /// <summary>
         /// Adds a new voxel key to the structure.
         /// </summary>
@@ -702,17 +714,30 @@ namespace IPMSpatialAnalysis.Classes
         /// <returns>The non-null dictionary.</returns>
         private Dictionary<(int, int, int), double> GetNonNullVoxelScalars()
         {
-            var keys = _voxelStructure.Keys;
+            //var keys = _voxelStructure.Keys;
+            //var nonNulls = new Dictionary<(int, int, int), double>();
+
+            //foreach (var key in keys)
+            //{
+            //    if (_voxelStructure.TryGetValue(key, out var voxel))
+            //    {
+            //        if (voxel.HasValue)
+            //        {
+            //            nonNulls[key] = voxel.Value.Value;
+            //        }
+            //    }
+            //}
+            //return nonNulls;
+
+            var keys = _voxelStructure.Keys.ToList();
             var nonNulls = new Dictionary<(int, int, int), double>();
 
             foreach (var key in keys)
             {
-                if (_voxelStructure.TryGetValue(key, out var voxel))
+                var voxel = _voxelStructure[key];
+                if (voxel.HasValue)
                 {
-                    if (voxel.HasValue)
-                    {
-                        nonNulls[key] = voxel.Value.Value;
-                    }
+                    nonNulls[key] = voxel.Value.Value;
                 }
             }
             return nonNulls;
