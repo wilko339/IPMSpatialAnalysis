@@ -136,10 +136,10 @@ namespace IPMSpatialAnalysis.Components.Read
 
                         Parallel.For(0, 
                             filePaths.Count,
-                            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount / 2},
+                            new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount},
                             i =>
                         {
-                            using (StreamReader reader = new StreamReader(File.OpenRead(filePaths[i])))
+                            using (StreamReader reader = new StreamReader(File.OpenRead(filePaths[i]), Encoding.UTF8, true, 4096))
                             {
                                 var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
                                 csv.Read();
