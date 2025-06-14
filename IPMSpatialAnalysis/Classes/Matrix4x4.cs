@@ -102,17 +102,23 @@ namespace IPMSpatialAnalysis.Classes
 
         public (double x, double y, double z) Transform(double x, double y, double z)
         {
-            double[] vector = new double[4] { x, y, z, 1 };
-            double[] result = new double[4];
-            for (int i = 0; i < 4; i++)
-            {
-                result[i] = 0;
-                for (int j = 0; j < 4; j++)
-                {
-                    result[i] += M[i, j] * vector[j];
-                }
-            }
-            return (result[0], result[1], result[2]);
+            //double[] vector = new double[4] { x, y, z, 1 };
+            //double[] result = new double[4];
+            //for (int i = 0; i < 4; i++)
+            //{
+            //    result[i] = 0;
+            //    for (int j = 0; j < 4; j++)
+            //    {
+            //        result[i] += M[i, j] * vector[j];
+            //    }
+            //}
+            //return (result[0], result[1], result[2]);
+
+            double rx = M[0, 0] * x + M[0, 1] * y + M[0, 2] * z + M[0, 3];
+            double ry = M[1, 0] * x + M[1, 1] * y + M[1, 2] * z + M[1, 3];
+            double rz = M[2, 0] * x + M[2, 1] * y + M[2, 2] * z + M[2, 3];
+            // Optionally handle homogeneous coordinate (M[3, *]) if needed
+            return (rx, ry, rz);
         }
     }
 }
