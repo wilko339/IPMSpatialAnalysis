@@ -85,8 +85,8 @@ namespace IPMSpatialAnalysis.Components.Preview
                     foreach (var voxelGoo in branch)
                     {
                         if (voxelGoo == null) continue;
-                        var display = new VoxelGoo((VoxelGoo)voxelGoo);
-                        _displayClouds.Add(GeneratePointCloud(display, displayRange.T0, displayRange.T1));
+                        //var display = new VoxelGoo((VoxelGoo)voxelGoo);
+                        _displayClouds.Add(GeneratePointCloud(voxelGoo, displayRange.T0, displayRange.T1));
                     }
                 }
             }
